@@ -8,7 +8,18 @@ class Sensor(ABC):
     """
     @abstractmethod
     def __init__(self, config):
+        """
+        Setup sensor with the required config and optional config
+        required config:
+            sampling rate: number of samples to be collected per second
+            buffer_size: number of seconds of data to be retained
+                (The plan is to setup a ring buffer to retain a running collection of recent observed samples)
+        """
         #setup sensor with required config
+        pass
+
+    @abstractmethod
+    def set_sampling_rate(hz):
         pass
 
     @abstractmethod
