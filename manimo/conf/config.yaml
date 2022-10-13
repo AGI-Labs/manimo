@@ -1,0 +1,2 @@
+defaults:
+  - arm: franka_arm
