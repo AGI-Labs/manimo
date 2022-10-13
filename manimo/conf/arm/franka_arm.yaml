@@ -1,3 +1,4 @@
-arm:
-  robot_ip: "172.16.0.2"
+_target_: manimo.actuators.arms.FrankaArm
+arm_cfg:
+  robot_ip: "172.16.0.1"
   hz: 50

@@ -3,7 +3,7 @@ import hydra
 import numpy as np
 from omegaconf import DictConfig
 from typing import Dict, Optional, Tuple
-from utils.types import ObsDict
+from manimo.utils.types import ObsDict
 
 
 class SingleArmEnv(Env):
@@ -24,5 +24,4 @@ class SingleArmEnv(Env):
     ) -> Tuple[ObsDict, float, bool, Dict]:
         for i, action in enumerate(actions):
             self.actuators[i].step(action)
-    
 
