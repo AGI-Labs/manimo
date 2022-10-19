@@ -14,6 +14,7 @@ class FrankaArm(Arm):
 
         # self.robot.send_torch_policy(self.policy, blocking=False)
     
-    def step(self, action):
-        self.robot.move_ee_xyz(action)
+    def step(self, action, delta=True):
+        # TODO (Mohan): Make move to ee pose faster by computing keypoints on the client 
+        self.robot.move_to_ee_pose(position=action, delta=delta)
         # self.robot.move_ee_xyz(torch.Tensor([0, 0, 0.2]))

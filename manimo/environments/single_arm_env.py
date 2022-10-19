@@ -19,9 +19,20 @@ class SingleArmEnv(Env):
         arm = hydra.utils.instantiate(actuators_config.arm)
         self.actuators.append(arm)
 
+        self.sensors = []
+        camera = hydra.utils.instantiate(sensors_config.camera)
+        self.sensors.append(camera)
+
+    def get_obs(self):
+        obs = {}
+        for sensor in self.sensors:
+            obs.update(sensor.get_obs())
+        return obs
+        
     def step(
         self, actions: Optional[np.ndarray] = None
     ) -> Tuple[ObsDict, float, bool, Dict]:
         for i, action in enumerate(actions):
             self.actuators[i].step(action)
+
 
