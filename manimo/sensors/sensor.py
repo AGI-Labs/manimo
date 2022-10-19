@@ -1,7 +1,7 @@
 """An abstract interface for a sensor that allows to users to read values from sensor
 """
 from abc import ABC, abstractmethod
-from manimo.utils.types import Observation
+from manimo.utils.types import ObsDict
 
 class Sensor(ABC):
     """Abstract class to read values from a sensor
@@ -30,10 +30,10 @@ class Sensor(ABC):
         stop polling sensor data
         """
 
-    @abstractmethod
-    def set_sampling_rate(hz):
-        pass
+    # @abstractmethod
+    # def set_sampling_rate(hz):
+    #     pass
 
     @abstractmethod
-    def get_obs() -> Observation:
+    def get_obs() -> ObsDict:
         pass

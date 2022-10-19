@@ -16,8 +16,8 @@ class SingleArmEnv(Env):
         of configs - sensors_config
         """
         self.actuators = []
-        arm = hydra.utils.instantiate(actuators_config.arm)
-        self.actuators.append(arm)
+        # arm = hydra.utils.instantiate(actuators_config.arm)
+        # self.actuators.append(arm)
 
         self.sensors = []
         camera = hydra.utils.instantiate(sensors_config.camera)
@@ -35,4 +35,6 @@ class SingleArmEnv(Env):
         for i, action in enumerate(actions):
             self.actuators[i].step(action)
 
-
+    def reset(self):
+        for sensor in self.sensors:
+            sensor.stop()
