@@ -10,8 +10,6 @@ from polymetis import RobotInterface
 import time
 import torch
 
-
-
 class FrankaArm(Arm):
     def __init__(self, arm_cfg: DictConfig):
         self.config = arm_cfg
@@ -23,13 +21,15 @@ class FrankaArm(Arm):
         self.JOINT_LIMIT_MAX = arm_cfg.joint_limit_max
         self.robot = RobotInterface(ip_address=self.config.robot_ip, enforce_version=False)
 
+        self._setup_mujoco_ik()
         self.connect()
     
-    def connect(self, policy=None):
+    def connect(self, policy=None, wait=2):
         if policy is None:
             policy = self._default_policy()
         self.policy = policy
         self.robot.send_torch_policy(policy, blocking=False)
+        time.sleep(wait)
 
     def _default_policy(self, kq_ratio=1.5, kqd_ratio=1.5):
         q_initial = self.robot.get_joint_positions()
@@ -62,8 +62,7 @@ class FrankaArm(Arm):
             q_des_tensor, self.JOINT_LIMIT_MIN, self.JOINT_LIMIT_MAX))
         self.robot.update_current_policy({"q_desired": q_des_tensor.float()})
 
-    def _apply_eef_commands(self, eef_pose, wait_time=3):
-
+    def _get_desired_pos_quat(self, eef_pose):
         if self.delta:
             ee_pos_cur, ee_quat_cur = self.robot.get_ee_pose()
             ee_pos_desired = ee_pos_cur + torch.Tensor(eef_pose[:3])
@@ -72,7 +71,13 @@ class FrankaArm(Arm):
             ee_pos_desired = torch.Tensor(eef_pose[:3])
             ee_quat_desired = torch.Tensor(eef_pose[3:])
 
-        joint_pos_cur = self.robot.get_joint_positions()
+        return ee_pos_desired, ee_quat_desired
+
+    def _apply_eef_commands(self, eef_pose, wait_time=3):
+
+        ee_pos_desired, ee_quat_desired = self._get_desired_pos_quat()
+
+        joint_pos_cur = self.robot.get_joint_positions(eef_pose)
         joint_pos_desired, success = self.robot.solve_inverse_kinematics(
             ee_pos_desired, ee_quat_desired, joint_pos_cur
         )
@@ -92,7 +97,13 @@ class FrankaArm(Arm):
 
     
     def step(self, action):
-        # TODO (Mohan): Make move to ee pose faster by computing keypoints on the client 
         if self.action_space == ActionSpace.Cartesian:
             if self.ik_mode == IKMode.Polymetis:
                 self._apply_eef_commands(action)
+
+            elif self.ik_mode == IKMode.DMControl:
+                ee_pos_current, ee_quat_current = self.robot.get_ee_pose()
+                cur_joint_positions = self.robot.get_joint_positions().numpy()
+                ee_pos_desired, ee_quat_desired = self._get_desired_pos_quat(action)
+                desired_action, _ = self.mujoco_model.local_inverse_kinematics(ee_pos_desired, ee_quat_desired, ee_pos_current, ee_quat_current, cur_joint_positions)
+                self._apply_joint_commands(desired_action)

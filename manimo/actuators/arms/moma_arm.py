@@ -1,10 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
-#
-# This source code is licensed under the MIT license found in the
-# LICENSE file in the root directory of this source tree.
-#
-# Adapted from code provided by https://github.com/AlexanderKhazatsky
-# TODO: Is this the right way to acknowledge?
 import sys
 import logging
 
@@ -113,11 +106,10 @@ class MujocoArmModel:
             max_cartesian_velocity_control_iterations=300,
             max_nullspace_control_iterations=300,
         )
-        self._cart_effector_6d = (
-            cartesian_6d_velocity_effector.Cartesian6dVelocityEffector(
+        self._cart_effector_6d = cartesian_6d_velocity_effector.Cartesian6dVelocityEffector(
                 cfg.name, effector, effector_model, effector_control
             )
-        )
+        self._cart_effector_6d.after_compile(self._arm.mjcf_model, self._physics)
 
     def local_inverse_kinematics(
         self,
@@ -125,7 +117,7 @@ class MujocoArmModel:
         ee_quat_desired,
         ee_pos_current,
         ee_quat_current,
-        joint_pos_current,
+        qpos,
     ):
         lin_vel = (ee_pos_desired - ee_pos_current).numpy()
         rot_vel = quat_diff(ee_quat_desired.numpy(), ee_quat_current.numpy())
@@ -133,13 +125,12 @@ class MujocoArmModel:
         action = np.concatenate([lin_vel, rot_vel])
         self._arm.update_state(
             self._physics,
-            joint_pos_current.numpy(),
-            np.zeros_like(joint_pos_current.numpy()),
-        )
+            qpos,
+             np.zeros_like(qpos))
         self._cart_effector_6d.set_control(self._physics, action)
         joint_vel_ctrl = self._physics.bind(self._arm.actuators).ctrl.copy()
 
-        desired_qpos = joint_pos_current + joint_vel_ctrl
-        success = np.any(joint_vel_ctrl)  # I think it returns zeros when it fails
+        desired_qpos = qpos + joint_vel_ctrl
+        success = np.any(joint_vel_ctrl)
 
         return torch.Tensor(desired_qpos), success

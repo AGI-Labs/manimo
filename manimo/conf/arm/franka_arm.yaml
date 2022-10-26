@@ -4,9 +4,9 @@ arm_cfg:
   robot_ip: "172.16.0.1"
   hz: 50
   action_space: Cartesian
+  delta: True
   joint_limit_min: [-2.8773, -1.7428, -2.8773, -3.0018, -2.8773, 0.0025, -2.8773]
   joint_limit_max: [2.8773, 1.7428, 2.8773, -0.1398, 2.8773, 3.7325, 2.8773]
-  ik_mode: Polymetis
+  ik_mode: DMControl # (DMControl, Polymetis)
   mujoco_xml_path: "/home/mohan/work/agi/control/manimo/manimo/actuators/arms/models/franka/franka_arm.xml"
   name: "FrankaArm"
-  delta: True
