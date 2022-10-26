@@ -10,18 +10,12 @@ class SingleArmEnv(Env):
     """
     A single arm manipulation environment with an actuator and various sensors
     """
-    def __init__(self, sensors_config: DictConfig, actuators_config: DictConfig):
+    def __init__(self, sensors_cfg: DictConfig, actuators_config: DictConfig):
         """
-        TODO (Mohan): How can we instantiate different sensor classes from a list
-        of configs - sensors_config
+        Initialize all the actuators and sensors based on the config
         """
-        self.actuators = []
-        # arm = hydra.utils.instantiate(actuators_config.arm)
-        # self.actuators.append(arm)
-
-        self.sensors = []
-        camera = hydra.utils.instantiate(sensors_config.camera)
-        self.sensors.append(camera)
+        self.actuators = [hydra.utils.instantiate(actuators_config[actuator]) for actuator in actuators_config.keys()]
+        self.sensors = [hydra.utils.instantiate(sensors_cfg[sensor]) for sensor in sensors_cfg.keys()]
 
     def get_obs(self):
         obs = {}

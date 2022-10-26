@@ -11,10 +11,13 @@ hydra.initialize(
 actuators_cfg = hydra.compose(config_name="actuators")
 
 sensors_cfg = hydra.compose(config_name="sensors")
+# sensors_cfg = []
 
-env = SingleArmEnv(sensors_config=sensors_cfg, actuators_config=actuators_cfg)
-action = torch.Tensor([0, 0, -0.1])
-# env.step([action])
+env = SingleArmEnv(sensors_cfg, actuators_cfg)
+eef_position = [0, 0, -0.05]
+eef_orientation = [0., 0., 0., 0.]
+action = torch.Tensor(eef_position + eef_orientation)
+env.step([action])
 obs = env.get_obs()
 env.reset()
 

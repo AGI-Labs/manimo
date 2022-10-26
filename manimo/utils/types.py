@@ -6,8 +6,12 @@ from typing import Any, Callable, Dict, Tuple, TypeVar
 
 
 class ActionSpace(Enum):
-    Joint=0
-    Cartesian=1
+    Joint='Joint'
+    Cartesian='Cartesian'
+
+class IKMode(Enum):
+    DMControl='DMControl'
+    Polymetis='Polymetis'
 
 ObsType = TypeVar("ObsType", np.ndarray, npt.ArrayLike)
 ObsDict = Dict[str, ObsType]

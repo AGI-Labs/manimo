@@ -3,6 +3,37 @@ import torch
 import torchcontrol as toco
 from typing import Dict
 
+class JointPDPolicy(toco.PolicyModule):
+    """
+    Custom policy that performs PD control around a desired joint position
+    """
+
+    def __init__(self, desired_joint_pos, kq, kqd, **kwargs):
+        """
+        Args:black
+            desired_joint_pos (int):    Number of steps policy should execute
+            hz (double):                Frequency of controller
+            kq, kqd (torch.Tensor):     PD gains (1d array)
+        """
+        super().__init__(**kwargs)
+
+        self.q_desired = torch.nn.Parameter(desired_joint_pos)
+
+        # Initialize modules
+        self.feedback = toco.modules.JointSpacePD(kq, kqd)
+
+    def forward(self, state_dict: Dict[str, torch.Tensor]):
+        # Parse states
+        q_current = state_dict["joint_positions"]
+        qd_current = state_dict["joint_velocities"]
+
+        # Execute PD control
+        output = self.feedback(
+            q_current, qd_current, self.q_desired, torch.zeros_like(qd_current)
+        )
+
+        return {"joint_torques": output}
+
 class CartesianPDPolicy(toco.PolicyModule):
     """
     Performs PD control around a desired cartesian position
