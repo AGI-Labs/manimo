@@ -1,0 +1,5 @@
+defaults:
+  franka_default_gains
+
+kq: [1, 1, 1, 1, 1, 1, 1]
+kqd: [1, 1, 1, 1, 1, 1, 1]

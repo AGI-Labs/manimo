@@ -90,7 +90,7 @@ class MujocoArmModel:
             self._arm.wrist_site, self._arm.joints
         )
         # TODO: put into configs
-        control_hz = 20
+        control_hz = 30
         scaler = 0.1
         effector_control = cartesian_6d_velocity_effector.ControlParams(
             control_timestep_seconds=1 / control_hz,

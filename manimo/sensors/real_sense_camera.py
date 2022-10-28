@@ -7,7 +7,6 @@ import time
 
 def add_image(pipe, rgb_frame_queue: Queue, depth_frame_queue: Queue, hz: float):
         align = rs.align(rs.stream.color)
-
         while True:
             frames = pipe.poll_for_frames()
 
@@ -51,7 +50,8 @@ class RealSenseCam(Sensor):
         config.enable_device(self.device_id)
         config.enable_stream(rs.stream.depth, camera_cfg.img_width, camera_cfg.img_height, rs.format.z16, camera_cfg.hz)
         config.enable_stream(rs.stream.color, camera_cfg.img_width, camera_cfg.img_height, rs.format.bgr8, camera_cfg.hz)
-
+        
+        '''
         self.pipe.start(config)
 
         if camera_cfg.warm_start.enabled:
@@ -63,19 +63,8 @@ class RealSenseCam(Sensor):
         self.rgb_frame_queue = Queue(camera_cfg.buffer_size)
         self.depth_frame_queue = Queue(camera_cfg.buffer_size)
         self.observer_proc = None
-        self.start()
-
-        # # Keep polling for frames in a background thread
-        # self.cam_state = {}
-        # self.pull_thread = Thread(target=update_camera, name="Update cameras",
-        #                           args=(self.pipes, self.cam_state, state),
-        #                           daemon=True)
-        # self.pull_thread.start()
-
-        # self.visual_thread = Thread(target=render_cam_state, name="Render camera states",
-        #                           args=[state])
-        # self.visual_thread.start()
-
+        '''
+        # self.start()
         print(f"[INFO] Camera setup completed.")
 
     def start(self):

@@ -1,14 +1,17 @@
+from argparse import Action
 import grpc
 import hydra
 from manimo.actuators.arms.arm import Arm
 from manimo.actuators.arms.moma_arm import MujocoArmModel
 from manimo.actuators.controllers import CartesianPDPolicy, JointPDPolicy
+from manimo.utils.helpers import Rate
 from manimo.utils.types import ActionSpace, IKMode
 import numpy as np
 from omegaconf import DictConfig
 from polymetis import RobotInterface
 import time
 import torch
+import torchcontrol as toco
 
 class FrankaArm(Arm):
     def __init__(self, arm_cfg: DictConfig):
@@ -20,30 +23,63 @@ class FrankaArm(Arm):
         self.JOINT_LIMIT_MIN = arm_cfg.joint_limit_min
         self.JOINT_LIMIT_MAX = arm_cfg.joint_limit_max
         self.robot = RobotInterface(ip_address=self.config.robot_ip, enforce_version=False)
-
+        self.kq = arm_cfg.kq
+        self.kqd = arm_cfg.kqd
+        self.home = arm_cfg.home
         self._setup_mujoco_ik()
-        self.connect()
+        self.reset()
     
     def connect(self, policy=None, wait=2):
         if policy is None:
-            policy = self._default_policy()
+            policy = self._default_policy(self.action_space)
         self.policy = policy
         self.robot.send_torch_policy(policy, blocking=False)
         time.sleep(wait)
 
-    def _default_policy(self, kq_ratio=1.5, kqd_ratio=1.5):
+    def reset(self):
+        self._go_home()
+        self.connect()
+
+    def _go_home(self):
+        # Create policy instance
         q_initial = self.robot.get_joint_positions()
-        kq = kq_ratio * torch.Tensor(self.robot.metadata.default_Kq)
-        kqd = kqd_ratio * torch.Tensor(self.robot.metadata.default_Kqd)
+        waypoints = toco.planning.generate_joint_space_min_jerk(
+            start=q_initial,
+            goal=torch.Tensor(self.home),
+            time_to_go=4,
+            hz=50)
+        hz = 50.0
+        rate = Rate(hz)
+        joint_positions = [waypoint["position"] for waypoint in waypoints]
+
+        q_initial = self.robot.get_joint_positions()
+        kq = torch.Tensor(self.robot.metadata.default_Kq)
+        kqd = torch.Tensor(self.robot.metadata.default_Kqd)
+        policy = JointPDPolicy(
+                    desired_joint_pos=torch.tensor(q_initial),
+                    kq=kq, kqd=kqd,)
+        self.robot.send_torch_policy(policy, blocking=False)
+        rate.sleep()
+        for joint_position in joint_positions:
+            self.robot.update_current_policy(
+                        {"q_desired": joint_position})
+            rate.sleep()
+
+    def _default_policy(self, action_space, kq_ratio=1.5, kqd_ratio=1.5):
+        q_initial = self.robot.get_joint_positions()
+        kq = kq_ratio * torch.Tensor(self.kq)
+        kqd = kqd_ratio * torch.Tensor(self.kqd)
+        # kq = kq_ratio * torch.Tensor(self.robot.metadata.default_Kq)
+        # kqd = kqd_ratio * torch.Tensor(self.robot.metadata.default_Kqd)
         kx=torch.Tensor(self.robot.metadata.default_Kx)
         kxd=torch.Tensor(self.robot.metadata.default_Kxd)
 
-        if self.action_space == ActionSpace.Joint:
+        if action_space == ActionSpace.Joint:
             return JointPDPolicy(
                     desired_joint_pos=torch.tensor(q_initial),
                     kq=kq, kqd=kqd,
             )
-        elif self.action_space == ActionSpace.Cartesian:
+        elif action_space == ActionSpace.Cartesian:
             if self.ik_mode == IKMode.Polymetis:
                 return CartesianPDPolicy(
                 torch.tensor(q_initial), True, kq, kqd, kx, kxd)
@@ -56,12 +92,6 @@ class FrankaArm(Arm):
     def _setup_mujoco_ik(self):
         self.mujoco_model = MujocoArmModel(self.config)
 
-    def _apply_joint_commands(self, q_desired):
-        q_des_tensor = np.array(q_desired)
-        q_des_tensor = torch.tensor(np.clip(
-            q_des_tensor, self.JOINT_LIMIT_MIN, self.JOINT_LIMIT_MAX))
-        self.robot.update_current_policy({"q_desired": q_des_tensor.float()})
-
     def _get_desired_pos_quat(self, eef_pose):
         if self.delta:
             ee_pos_cur, ee_quat_cur = self.robot.get_ee_pose()
@@ -72,12 +102,19 @@ class FrankaArm(Arm):
             ee_quat_desired = torch.Tensor(eef_pose[3:])
 
         return ee_pos_desired, ee_quat_desired
+    
+    def _apply_joint_commands(self, q_desired):
+        q_des_tensor = np.array(q_desired)
+        q_des_tensor = torch.tensor(np.clip(
+            q_des_tensor, self.JOINT_LIMIT_MIN, self.JOINT_LIMIT_MAX))
+        self.robot.update_current_policy({"q_desired": q_des_tensor.float()})
+
 
     def _apply_eef_commands(self, eef_pose, wait_time=3):
 
-        ee_pos_desired, ee_quat_desired = self._get_desired_pos_quat()
+        ee_pos_desired, ee_quat_desired = self._get_desired_pos_quat(eef_pose)
 
-        joint_pos_cur = self.robot.get_joint_positions(eef_pose)
+        joint_pos_cur = self.robot.get_joint_positions()
         joint_pos_desired, success = self.robot.solve_inverse_kinematics(
             ee_pos_desired, ee_quat_desired, joint_pos_cur
         )
@@ -107,3 +144,13 @@ class FrankaArm(Arm):
                 ee_pos_desired, ee_quat_desired = self._get_desired_pos_quat(action)
                 desired_action, _ = self.mujoco_model.local_inverse_kinematics(ee_pos_desired, ee_quat_desired, ee_pos_current, ee_quat_current, cur_joint_positions)
                 self._apply_joint_commands(desired_action)
+
+
+    def get_obs(self):
+        obs = {}
+        joint_positions = self.robot.get_joint_positions()
+        eef_position, eef_orientation = self.robot.get_ee_pose()
+        obs['q_pos'] = joint_positions.numpy()
+        obs['eef_pos'] = eef_position.numpy()
+        obs['eef_rot'] = eef_orientation.numpy()
+        return obs

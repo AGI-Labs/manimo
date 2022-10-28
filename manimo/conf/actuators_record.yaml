@@ -1,0 +1,5 @@
+defaults:
+  - arm: franka_arm
+
+# arm:
+#   gains: arm/franka_record_gains
