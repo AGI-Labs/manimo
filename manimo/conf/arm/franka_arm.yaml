@@ -3,7 +3,7 @@ _target_: manimo.actuators.arms.FrankaArm
 arm_cfg:
   robot_ip: "172.16.0.1"
   hz: 30
-  action_space: Joint # (Cartesian, Joint)
+  action_space: Cartesian # (Cartesian, Joint)
   delta: False
   ik_mode: DMControl # (DMControl, Polymetis)
   joint_limit_min: [-2.8973, -1.7628, -2.8773, -3.0018, -2.8773, 0.0025, -2.8773]

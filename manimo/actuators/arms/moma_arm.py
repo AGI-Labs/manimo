@@ -21,7 +21,9 @@ from dm_robotics.moma.models.robots.robot_arms import robot_arm
 
 
 def quat_diff(target, source):
-    return (R.from_quat(source).inv() * R.from_quat(target)).as_rotvec()
+    result = R.from_quat(target) * R.from_quat(source).inv()
+    return result.as_euler('xyz')
+    # return result.as_quat()
 
 
 class MjcfArm(robot_arm.RobotArm):

@@ -58,8 +58,8 @@ def main():
         joints = data["joint_pos"]
         # Execute trajectory
         for i in range(len(eef_positions)):
-            #action = torch.Tensor(np.append(eef_positions[i], eef_orientations[i]))
-            action = torch.Tensor(joints[i])
+            action = torch.Tensor(np.append(eef_positions[i], eef_orientations[i]))
+            # action = torch.Tensor(joints[i])
             actions.append(action)
             obs.append(env.step([action])[0])
         env.reset()
