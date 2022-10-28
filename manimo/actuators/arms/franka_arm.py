@@ -145,6 +145,9 @@ class FrankaArm(Arm):
                 desired_action, _ = self.mujoco_model.local_inverse_kinematics(ee_pos_desired, ee_quat_desired, ee_pos_current, ee_quat_current, cur_joint_positions)
                 self._apply_joint_commands(desired_action)
 
+        elif self.action_space == ActionSpace.Joint:
+            self._apply_joint_commands(action)
+
 
     def get_obs(self):
         obs = {}

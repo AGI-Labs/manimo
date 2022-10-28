@@ -55,10 +55,11 @@ def main():
             user_in = input("Ready. Loaded {} ({} hz):".format(name, hz))
         actions = []
         home, eef_positions, eef_orientations, hz = data["home"], data["eef_pos"], data["eef_rot"], 30
-
+        joints = data["joint_pos"]
         # Execute trajectory
         for i in range(len(eef_positions)):
-            action = torch.Tensor(np.append(eef_positions[i], eef_orientations[i]))
+            #action = torch.Tensor(np.append(eef_positions[i], eef_orientations[i]))
+            action = torch.Tensor(joints[i])
             actions.append(action)
             obs.append(env.step([action])[0])
         env.reset()

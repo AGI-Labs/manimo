@@ -91,12 +91,13 @@ class MujocoArmModel:
         )
         # TODO: put into configs
         control_hz = 30
-        scaler = 0.1
+        scaler = 1.0
         effector_control = cartesian_6d_velocity_effector.ControlParams(
             control_timestep_seconds=1 / control_hz,
             max_lin_vel=1.0,
             max_rot_vel=1.0,
-            joint_velocity_limits=np.array([2.075 * scaler] * 4 + [2.51 * scaler] * 3),
+            # joint_velocity_limits=np.array([2.075 * scaler] * 4 + [2.51 * scaler] * 3),
+            joint_velocity_limits=np.array([2.575, 2.575, 2.575, 2.575, 4.51, 4.51, 4.51]),
             nullspace_gain=0.025,
             # nullspace_joint_position_reference=[0 for i in range(7)], <- does this by default
             regularization_weight=1e-2,  # 1e-2
