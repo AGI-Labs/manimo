@@ -19,7 +19,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--name")
     parser.add_argument("--task", type=str, default="pour")
-    parser.add_argument("--time", type=float, default=16)
+    parser.add_argument("--time", type=float, default=20)
 
     args = parser.parse_args()
     name = args.name
