@@ -13,7 +13,7 @@ class SingleArmEnv(Env):
     """
     def __init__(self, sensors_cfg: DictConfig, actuators_cfg: DictConfig, hz=30.):
         """
-        Initialize all the actuators and sensors based on the config
+        Initialize the environment with all the actuators and sensors based on the config
 
         Args:
             sensors_cfg (DictConfig): The config for the sensors
@@ -27,7 +27,7 @@ class SingleArmEnv(Env):
     def get_obs(self) -> ObsDict:
         """
         Get the observations from all the sensors and actuators
-        
+
         Returns:
             ObsDict: The observations
         """
@@ -44,6 +44,13 @@ class SingleArmEnv(Env):
     def step(
         self, actions: Optional[np.ndarray] = None
     ) -> Tuple[ObsDict, float, bool, Dict]:
+        """
+        Step the environment forward
+        Args:
+            actions (Optional[np.ndarray], optional): The actions to take. Defaults to None.
+        Returns:
+            Tuple[ObsDict, float, bool, Dict]: The observations, the reward, whether the episode is done, and any info
+        """
         if actions is not None:
             for i, action in enumerate(actions):
                 self.actuators[i].step(action)
@@ -51,6 +58,9 @@ class SingleArmEnv(Env):
         return self.get_obs(), 0, False, None
 
     def reset(self):
+        """
+        Reset the environment
+        """
         for actuator in self.actuators:
             actuator.reset()
         # for sensor in self.sensors:
