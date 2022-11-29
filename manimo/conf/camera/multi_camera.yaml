@@ -1,0 +1,25 @@
+cam0:
+  _target_: manimo.sensors.RealSenseCam
+  camera_cfg:
+    img_width: 640
+    img_height: 480
+    hz: 30
+    name: "cam0c"
+    device_id: "818312070212"
+    buffer_size: 1
+    warm_start:
+      enabled: True
+      frames: 60
+
+# cam1:
+#   _target_: manimo.sensors.RealSenseCam
+#   camera_cfg:
+#     img_width: 640
+#     img_height: 480
+#     hz: 30
+#     name: "cam1c"
+#     device_id: "101622070870"
+#     buffer_size: 1
+#     warm_start:
+#       enabled: True
+#       frames: 60

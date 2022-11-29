@@ -1,2 +1,2 @@
 defaults:
-  - camera: real_sense
+  - camera: multi_camera

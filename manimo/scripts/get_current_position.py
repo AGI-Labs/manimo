@@ -10,13 +10,13 @@ hydra.initialize(
         config_path="../conf", job_name="collect_demos_test"
     )
 actuators_cfg = hydra.compose(config_name="actuators")
-
 sensors_cfg = hydra.compose(config_name="sensors")
 # sensors_cfg = []
 
 env = SingleArmEnv(sensors_cfg, actuators_cfg)
 obs = env.get_obs()
+
 env.reset()
 
 for key in obs:
-    print(f"obs key: {key}, data: {obs[key]}")
+    print(f"obs key: {key}")
