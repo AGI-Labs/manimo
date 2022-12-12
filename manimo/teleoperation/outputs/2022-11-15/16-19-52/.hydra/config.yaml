@@ -1,0 +1,7 @@
+device:
+  device:
+    _target_: control_device.keyboard.KeyboardReader
+use_gripper: false
+nuc_ip: 172.16.0.1
+update_hz: 60
+sensitivity: 0.8

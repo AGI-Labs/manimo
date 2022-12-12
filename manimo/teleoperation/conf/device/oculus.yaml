@@ -1,0 +1,5 @@
+device:
+    _target_: manimo.teleoperation.OculusQuestReader
+    lpf_cutoff_hz: 15
+    control_hz: ${update_hz}
+    ip_address: 172.26.21.2
