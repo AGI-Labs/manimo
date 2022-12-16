@@ -1,2 +1,3 @@
 defaults:
   - arm: franka_arm
+  - gripper: franka_gripper

@@ -33,7 +33,7 @@ def main():
             config_path="../conf", job_name="collect_demos_test"
         )
 
-    actuators_cfg = hydra.compose(config_name="actuators_record")
+    actuators_cfg = hydra.compose(config_name="actuators")
     sensors_cfg = hydra.compose(config_name="sensors")
 
     env = SingleArmEnv(sensors_cfg, actuators_cfg)
@@ -58,7 +58,8 @@ def main():
 
             action = agent.get_action(obs)
             if action is not None:
-                action = [action]
+                arm_action, gripper_action = action
+                action = [arm_action, gripper_action]
             
             obs = env.step(action)[0]
             

@@ -98,7 +98,7 @@ class TeleopAgent(Agent):
                 arm_pose_desired = pose_elementwise_apply(vr_pose_diff, self.arm_pose_ref)
 
                 ee_pos_desired, ee_quat_desired = getPosQuat(arm_pose_desired)
-                return np.append(ee_pos_desired.numpy(), ee_quat_desired.numpy())
+                return np.append(ee_pos_desired.numpy(), ee_quat_desired.numpy()), grasp_state
 
             else:
                 self.init_ref = True
