@@ -7,20 +7,29 @@ from torchcontrol.transform import Rotation as R
 
 from .base import TeleopDeviceReader
 
+def vec_to_reorder_mat(vec):
+    X = np.zeros((len(vec), len(vec)))
+    for i in range(X.shape[0]):
+        ind = int(abs(vec[i])) - 1
+        X[i, ind] = np.sign(vec[i])
+    return X
 
 class OculusQuestReader(TeleopDeviceReader):
     """Allows for teleoperation using an Oculus controller
     Using the right controller, fully press the grip button (middle finger) to engage teleoperation. Hold B to perform grasp.
     """
 
-    def __init__(self, ip_address, lpf_cutoff_hz, control_hz):
+    def __init__(self, ip_address, lpf_cutoff_hz, control_hz, controller_id):
         self.reader = OculusReader(ip_address=ip_address) if ip_address is not None else OculusReader()
         self.reader.run()
-
+        self.controller_id = controller_id
         # LPF filter
         self.vr_pose_filtered = None
         tmp = 2 * np.pi * lpf_cutoff_hz / control_hz
         self.lpf_alpha = tmp / (tmp + 1)
+        self.global_to_env_mat = vec_to_reorder_mat([-2, -1, -3, 4])
+        self.vr_to_global_mat = np.eye(4)
+        self.reset_orientation = True
 
         print("Oculus Quest teleop reader instantiated.")
 
@@ -33,12 +42,16 @@ class OculusQuestReader(TeleopDeviceReader):
         if transforms:
             is_active = buttons["rightGrip"][0] > 0.9
             grasp_state = buttons["B"]
-            pose_matrix = np.linalg.pinv(transforms["l"]) @ transforms["r"]
+            if self.reset_orientation:
+                self.vr_to_global_mat = np.linalg.inv(np.asarray(transforms[self.controller_id]))
+                self.reset_orientation = False
+            pose_matrix = self.global_to_env_mat @ self.vr_to_global_mat @ np.asarray(transforms[self.controller_id])
         else:
             is_active = False
             grasp_state = 0
             pose_matrix = np.eye(4)
             self.vr_pose_filtered = None
+            self.reset_orientation = True
 
         # Create transform (hack to prevent unorthodox matrices)
         r = R.from_matrix(torch.Tensor(pose_matrix[:3, :3]))
