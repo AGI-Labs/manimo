@@ -1,5 +1,5 @@
 cam0:
-  _target_: manimo.sensors.RealSenseCam
+  _target_: manimo.sensors.real_sense_camera.RealSenseCam
   camera_cfg:
       img_width: 640
       img_height: 480

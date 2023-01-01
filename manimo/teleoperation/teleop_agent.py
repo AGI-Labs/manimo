@@ -80,12 +80,11 @@ class TeleopAgent(Agent):
             np.ndarray: The action
         """
         # Obtain info from teleop device
-        is_active, vr_pose_curr, grasp_state = self.teleop.get_state()
+        control_en, grasp_en, vr_pose_curr = self.teleop.get_state()
 
         try:
             # Update arm
-            print(f"is_active: {is_active}")
-            if is_active:
+            if control_en:
                 # Update reference pose
                 if self.init_ref:
                     self.vr_pose_ref = vr_pose_curr
@@ -98,7 +97,7 @@ class TeleopAgent(Agent):
                 arm_pose_desired = pose_elementwise_apply(vr_pose_diff, self.arm_pose_ref)
 
                 ee_pos_desired, ee_quat_desired = getPosQuat(arm_pose_desired)
-                return np.append(ee_pos_desired.numpy(), ee_quat_desired.numpy()), grasp_state
+                return np.append(ee_pos_desired.numpy(), ee_quat_desired.numpy()), grasp_en
 
             else:
                 self.init_ref = True

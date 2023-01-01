@@ -14,6 +14,18 @@ def vec_to_reorder_mat(vec):
         X[i, ind] = np.sign(vec[i])
     return X
 
+def get_button_labels(controller_id: str) -> dict:
+    if controller_id == "R":
+        return {
+            "control_en": "rightGrip",
+            "grasp_en": "B",
+        }
+    else:
+        return {
+            "control_en": "leftGrip",
+            "grasp_en": "X",
+        }
+
 class OculusQuestReader(TeleopDeviceReader):
     """Allows for teleoperation using an Oculus controller
     Using the right controller, fully press the grip button (middle finger) to engage teleoperation. Hold B to perform grasp.
@@ -39,16 +51,17 @@ class OculusQuestReader(TeleopDeviceReader):
         print(f"transforms: {transforms}, buttons: {buttons}")
 
         # Generate output
+        button_labels = get_button_labels(self.controller_id)
         if transforms:
-            is_active = buttons["rightGrip"][0] > 0.9
-            grasp_state = buttons["B"]
+            control_en = buttons[button_labels["control_en"]][0] > 0.9
+            grasp_en = buttons[button_labels["grasp_en"]]
             if self.reset_orientation:
                 self.vr_to_global_mat = np.linalg.inv(np.asarray(transforms[self.controller_id]))
                 self.reset_orientation = False
             pose_matrix = self.global_to_env_mat @ self.vr_to_global_mat @ np.asarray(transforms[self.controller_id])
         else:
-            is_active = False
-            grasp_state = 0
+            control_en = False
+            grasp_en = 0
             pose_matrix = np.eye(4)
             self.vr_pose_filtered = None
             self.reset_orientation = True
@@ -57,7 +70,6 @@ class OculusQuestReader(TeleopDeviceReader):
         r = R.from_matrix(torch.Tensor(pose_matrix[:3, :3]))
         pose_matrix[:3, :3] = sp.SO3.exp(r.as_rotvec()).matrix()
         vr_pose_curr = sp.SE3(pose_matrix)
-
         # Filter transform
         if self.vr_pose_filtered is None:
             self.vr_pose_filtered = vr_pose_curr
@@ -67,7 +79,7 @@ class OculusQuestReader(TeleopDeviceReader):
             )
         pose = self.vr_pose_filtered
 
-        return is_active, pose, grasp_state
+        return control_en, grasp_en, pose
 
     @staticmethod
     def _interpolate_pose(pose1, pose2, pct):
