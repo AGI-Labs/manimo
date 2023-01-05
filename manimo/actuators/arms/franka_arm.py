@@ -6,6 +6,7 @@ from manimo.actuators.arms.moma_arm import MujocoArmModel
 from manimo.actuators.controllers import CartesianPDPolicy, JointPDPolicy
 from manimo.utils.helpers import Rate
 from manimo.utils.types import ActionSpace, IKMode
+from manimo.teleoperation.teleop_agent import quat_add
 import numpy as np
 from omegaconf import DictConfig
 from polymetis import RobotInterface
@@ -96,7 +97,9 @@ class FrankaArm(Arm):
         if self.delta:
             ee_pos_cur, ee_quat_cur = self.robot.get_ee_pose()
             ee_pos_desired = ee_pos_cur + torch.Tensor(eef_pose[:3])
-            ee_quat_desired = ee_quat_cur + torch.Tensor(eef_pose[3:])  
+
+            # add two quaternions
+            ee_quat_desired = torch.Tensor(quat_add(ee_quat_cur, eef_pose[3:]))
         else:
             ee_pos_desired = torch.Tensor(eef_pose[:3])
             ee_quat_desired = torch.Tensor(eef_pose[3:])
@@ -107,8 +110,10 @@ class FrankaArm(Arm):
         q_des_tensor = np.array(q_desired)
         q_des_tensor = torch.tensor(np.clip(
             q_des_tensor, self.JOINT_LIMIT_MIN, self.JOINT_LIMIT_MAX))
-        self.robot.update_current_policy({"q_desired": q_des_tensor.float()})
-
+        try:
+            self.robot.update_current_policy({"q_desired": q_des_tensor.float()})
+        except grpc.RpcError:
+            self.reset()
 
     def _apply_eef_commands(self, eef_pose, wait_time=3):
 

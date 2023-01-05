@@ -3,32 +3,23 @@ import numpy as np
 from manimo.utils.types import ObsDict
 import sophus as sp
 import torch
-from torchcontrol.transform import Rotation as R
+from scipy.spatial.transform import Rotation as R
 from typing import Optional
 
-def pose_elementwise_diff(pose1, pose2):
-    return sp.SE3(
-        (pose2.so3() * pose1.so3().inverse()).matrix().T,
-        pose2.translation() - pose1.translation(),
-    )
+def quat_to_euler(quat, degrees=False):
+    euler = R.from_quat(quat).as_euler('xyz', degrees=degrees)
+    return euler
 
-def pose_elementwise_apply(delta_pose, pose):
-    return sp.SE3(
-        (pose.so3() * delta_pose.so3()).matrix(),
-        delta_pose.translation() + pose.translation(),
-    )
+def euler_to_quat(euler, degrees=False):
+    return R.from_euler('xyz', euler, degrees=degrees).as_quat()
 
-def getSE3Pose(pos, quat):
-        rotvec = R.from_quat(quat).as_rotvec()
-        return sp.SE3(sp.SO3.exp(rotvec).matrix(), pos)
+def quat_diff(target, source):
+    result = R.from_quat(target) * R.from_quat(source).inv()
+    return result.as_quat()
 
-def getPosQuat(pose_des):
-    # Compute desired pos & quat
-    ee_pos_desired = torch.Tensor(pose_des.translation())
-    ee_quat_desired = R.from_matrix(
-        torch.Tensor(pose_des.rotationMatrix())
-    ).as_quat()
-    return ee_pos_desired, ee_quat_desired
+def quat_add(target, source):
+    result = R.from_quat(target) * R.from_quat(source)
+    return result.as_quat()
 
 class Agent:
     """
@@ -64,10 +55,13 @@ class TeleopAgent(Agent):
         self.teleop = hydra.utils.instantiate(self.teleop_cfg.device)['device']
         
         # Initialize variables
-        self.vr_pose_ref = sp.SE3()
-        self.arm_pose_ref = sp.SE3()
+        self.robot_origin = {'pos': None, 'quat': None}
+        self.vr_origin = {'pos': None, 'quat': None}
         self.init_ref = True
 
+        self.pos_action_gain = 0.5
+        self.rot_action_gain = 0.2
+        self.gripper_action_gain = 1
 
     def get_action(self, obs: ObsDict) -> Optional[np.ndarray]:
         """
@@ -82,22 +76,42 @@ class TeleopAgent(Agent):
         # Obtain info from teleop device
         control_en, grasp_en, vr_pose_curr = self.teleop.get_state()
 
+        vr_pos, vr_quat = vr_pose_curr
+
+        robot_pos = obs['eef_pos']
+        robot_quat = obs['eef_rot']
+        robot_gripper = obs['eef_gripper_width']
+
         try:
             # Update arm
             if control_en:
                 # Update reference pose
                 if self.init_ref:
-                    self.vr_pose_ref = vr_pose_curr
-                    self.arm_pose_ref = getSE3Pose(obs['eef_pos'], torch.Tensor(obs['eef_rot']))
+                    self.robot_origin = {'pos': robot_pos, 'quat': robot_quat}
+                    self.vr_origin = {'pos': vr_pos, 'quat': vr_quat}
                     self.init_ref = False
 
-                # Determine pose
-                vr_pose_diff = pose_elementwise_diff(self.vr_pose_ref, vr_pose_curr)
-                vr_pose_diff = sp.SE3.exp(self.teleop_cfg.sensitivity * vr_pose_diff.log())
-                arm_pose_desired = pose_elementwise_apply(vr_pose_diff, self.arm_pose_ref)
+                # Calculate Positional Action
+                target_pos_offset = vr_pos - self.vr_origin['pos']
+                pos_action = target_pos_offset
 
-                ee_pos_desired, ee_quat_desired = getPosQuat(arm_pose_desired)
-                return np.append(ee_pos_desired.numpy(), ee_quat_desired.numpy()), grasp_en
+                # Calculate Euler Orientation Action
+                target_quat_offset = quat_diff(vr_quat, self.vr_origin['quat'])
+                quat_action = target_quat_offset
+                euler_action = quat_to_euler(quat_action)
+
+                # Scale Appropriately
+                pos_action *= self.pos_action_gain
+                euler_action *= self.rot_action_gain
+
+                # Add robot origin
+                quat_action = euler_to_quat(euler_action)
+                quat_action = quat_add(self.robot_origin['quat'], quat_action)
+                pos_action += self.robot_origin['pos']
+                
+                action = np.append(pos_action, quat_action), grasp_en
+                
+                return action
 
             else:
                 self.init_ref = True
