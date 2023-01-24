@@ -46,7 +46,7 @@ def main():
     parser.add_argument("--task", type=str, default="insertion")
     parser.add_argument("--time", type=float, default=100)
     parser.add_argument("--path", type=str, default="data")
-
+    parser.add_argument("--gripper_en", type=bool, default= False)
     imgs_queue = Queue(maxsize=1)
     # parser.add_argument("--")
 
@@ -54,7 +54,7 @@ def main():
     name = args.name
     task = args.task
     TIME = args.time
-    HZ = 30
+    HZ = 5
     home = HOMES[task]
 
     hydra.initialize(
@@ -94,8 +94,10 @@ def main():
             action = agent.get_action(obs)
             if action is not None:
                 arm_action, gripper_action = action
-                action = [arm_action, gripper_action]
-            
+                if args.gripper_en:
+                    action = [arm_action, gripper_action]
+                else:
+                    action = [arm_action]
             obs = env.step(action)[0]
             
             # store observations
@@ -118,7 +120,7 @@ def main():
             
             end = time.time() - start
 
-            print(f"took {end} seconds to collect data, {time_before_dump} seconds to obtain observations")
+            # print(f"took {end} seconds to collect data, {time_before_dump} seconds to obtain observations")
         
         # store the last observation
         env.reset()
@@ -133,6 +135,3 @@ def main():
         break
 if __name__ == "__main__":
     main()
-
-
-

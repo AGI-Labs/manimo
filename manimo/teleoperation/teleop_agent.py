@@ -1,7 +1,6 @@
 import hydra
 import numpy as np
 from manimo.utils.types import ObsDict
-import sophus as sp
 import torch
 from scipy.spatial.transform import Rotation as R
 from typing import Optional
@@ -80,7 +79,7 @@ class TeleopAgent(Agent):
 
         robot_pos = obs['eef_pos']
         robot_quat = obs['eef_rot']
-        robot_gripper = obs['eef_gripper_width']
+        robot_gripper_width = obs['eef_gripper_width']
 
         try:
             # Update arm
@@ -108,6 +107,7 @@ class TeleopAgent(Agent):
                 quat_action = euler_to_quat(euler_action)
                 quat_action = quat_add(self.robot_origin['quat'], quat_action)
                 pos_action += self.robot_origin['pos']
+                        
                 
                 action = np.append(pos_action, quat_action), grasp_en
                 
