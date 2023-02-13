@@ -26,7 +26,7 @@ class FrankaArm(Arm):
         self.robot = RobotInterface(ip_address=self.config.robot_ip, enforce_version=False)
         self.kq = arm_cfg.kq
         self.kqd = arm_cfg.kqd
-        self.home = arm_cfg.home
+        self.home = arm_cfg.home if arm_cfg.home is not None else self.robot.get_joint_positions()
         self._setup_mujoco_ik()
         self.reset()
     
@@ -57,7 +57,7 @@ class FrankaArm(Arm):
         kq = torch.Tensor(self.robot.metadata.default_Kq)
         kqd = torch.Tensor(self.robot.metadata.default_Kqd)
         policy = JointPDPolicy(
-                    desired_joint_pos=torch.tensor(q_initial),
+                    desired_joint_pos=q_initial,
                     kq=kq, kqd=kqd,)
         self.robot.send_torch_policy(policy, blocking=False)
         rate.sleep()
@@ -83,7 +83,7 @@ class FrankaArm(Arm):
         elif action_space == ActionSpace.Cartesian:
             if self.ik_mode == IKMode.Polymetis:
                 return CartesianPDPolicy(
-                torch.tensor(q_initial), True, kq, kqd, kx, kxd)
+                q_initial, True, kq, kqd, kx, kxd)
             elif self.ik_mode == IKMode.DMControl:
                 return JointPDPolicy(
                     desired_joint_pos=torch.tensor(q_initial),

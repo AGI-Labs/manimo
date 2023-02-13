@@ -1,10 +1,10 @@
 import getch
 
 import numpy as np
-import sophus as sp
 
 from .base import TeleopDeviceReader
 
+# TODO: Add support for rotation
 
 class KeyboardReader(TeleopDeviceReader):
     """Allows for teleoperation using the keyboard
@@ -55,9 +55,9 @@ class KeyboardReader(TeleopDeviceReader):
         is_active = True
 
         pose_matrix = np.eye(4)
-        pose_matrix[:3, :3] = sp.SO3.exp(self.delta_rot).matrix() @ pose_matrix[:3, :3]
+        #pose_matrix[:3, :3] = sp.SO3.exp(self.delta_rot).matrix() @ pose_matrix[:3, :3]
         pose_matrix[:3, -1] = self.delta_pos
-        pose = sp.SE3(pose_matrix)
+        pose = pose_matrix
 
         grasp_state = self.grasp_state
 

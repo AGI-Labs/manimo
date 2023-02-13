@@ -20,8 +20,8 @@ class SingleArmEnv(Env):
             actuators_cfg (DictConfig): The config for the actuators
             hz (float, optional): The rate at which the environment should run. Defaults to 30.
         """
-        self.actuators = [hydra.utils.instantiate(actuators_cfg[actuators][actuator]) for actuators in actuators_cfg for actuator in actuators_cfg[actuators]]
-        # self.sensors = [hydra.utils.instantiate(sensors_cfg[sensors][sensor]) for sensors in sensors_cfg for sensor in sensors_cfg[sensors]]
+        self.actuators = [hydra.utils.instantiate(actuators_cfg[actuator_type][actuator]) for actuator_type in actuators_cfg for actuator in actuators_cfg[actuator_type]]
+        self.sensors = [hydra.utils.instantiate(sensors_cfg[sensor_type][sensor]) for sensor_type in sensors_cfg for sensor in sensors_cfg[sensor_type]]
         self.rate = Rate(hz)
     
     def get_obs(self) -> ObsDict:
@@ -33,8 +33,8 @@ class SingleArmEnv(Env):
         """
         obs = {}
         # Aggregate observations from the sensors
-        # for sensor in self.sensors:
-        #     obs.update(sensor.get_obs())
+        for sensor in self.sensors:
+            obs.update(sensor.get_obs())
 
         # Some of the actuators can also have observations
         for actuator in self.actuators:
@@ -61,8 +61,9 @@ class SingleArmEnv(Env):
         """
         Reset the environment
         """
+        obs = self.get_obs()
         for actuator in self.actuators:
             actuator.reset()
-        # for sensor in self.sensors:
-        #     sensor.stop()
-        return self.get_obs()
+        for sensor in self.sensors:
+            sensor.stop()
+        return obs

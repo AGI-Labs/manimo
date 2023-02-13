@@ -83,6 +83,7 @@ class RealSenseCam(Sensor):
         self.observer_proc.terminate()
 
     def get_obs(self):
+        # TODO: add support for buffersize > 1
         try:
             return {self.name: self.rgb_frame_queue.get()}
         except:
