@@ -1,5 +1,4 @@
 import numpy as np
-import sophus as sp
 import torch
 
 from oculus_reader import OculusReader
@@ -60,6 +59,10 @@ class OculusQuestReader(TeleopDeviceReader):
         if transforms:
             control_en = buttons[button_labels["control_en"]][0] > 0.9
             grasp_en = buttons[button_labels["grasp_en"]]
+            if grasp_en:
+                print(f"grasp enabled")
+            else:
+                print(f"grasp not enabled")
             if self.reset_orientation:
                 self.vr_to_global_mat = np.linalg.inv(np.asarray(transforms[self.controller_id]))
                 self.reset_orientation = False
