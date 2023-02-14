@@ -1,0 +1,10 @@
+contact_mic:
+  _target_: manimo.sensors.contact_mic.ContactMic
+  contact_mic_cfg:
+      name: "audio"
+      port: "/dev/ttyACM0"
+      audio_fps: 32000
+      audio_packet_size: 64
+      num_channels: 4
+      window_dur: 3
+      
