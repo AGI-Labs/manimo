@@ -16,6 +16,7 @@ pip install dm-control
 pip install dm-robotics-moma
 pip install protobuf==3.20.3
 pip install pyrealsense2
+pip install h5py
 
 # Build libfranka
 ./scripts/build_libfranka.sh
