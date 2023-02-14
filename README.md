@@ -11,3 +11,5 @@ A modular interface for robotic manipulation:
 
 1. supports on-board calbiration of different sensors.
   
+## Acknowledgements:
+manimo's design is heavily inspired by [franka_demo](https://github.com/AGI-Labs/franka_demo/tree/dmanus_devel)
