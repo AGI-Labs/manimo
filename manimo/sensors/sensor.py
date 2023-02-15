@@ -19,13 +19,13 @@ class Sensor(ABC):
         pass
 
     @abstractmethod
-    def start():
+    def start(self):
         """
         start polling sensor data
         """
     
     @abstractmethod
-    def stop():
+    def stop(self):
         """
         stop polling sensor data
         """
@@ -35,5 +35,5 @@ class Sensor(ABC):
     #     pass
 
     @abstractmethod
-    def get_obs() -> ObsDict:
+    def get_obs(self) -> ObsDict:
         pass
