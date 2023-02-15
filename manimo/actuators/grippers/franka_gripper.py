@@ -55,7 +55,7 @@ class FrankaGripper(Gripper):
         Reset the gripper to the initial state
         """
         self._open_gripper()
-        return self.get_obs()
+        return self.get_obs(), {}
 
 
     def get_obs(self):

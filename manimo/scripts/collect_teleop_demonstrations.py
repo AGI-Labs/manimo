@@ -69,7 +69,7 @@ def main():
 
     agent = TeleopAgent()
 
-    obs = env.reset()
+    obs, _ = env.reset()
 
     while True:
         filename, index = _get_filename(args.path, name, task)
@@ -81,7 +81,7 @@ def main():
 
         user_in = "r"
         while user_in == "r":
-            obs = env.reset()
+            obs, _ = env.reset()
             user_in = input("Ready. Recording {}".format(filename))
 
         joints = []

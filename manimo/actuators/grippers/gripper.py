@@ -14,3 +14,7 @@ class Gripper(ABC):
     @abstractmethod
     def step(self, action):
         pass
+
+    @abstractmethod
+    def reset(self):
+        pass
