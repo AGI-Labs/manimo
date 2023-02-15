@@ -6,6 +6,8 @@ import tempfile
 import imageio
 
 import numpy as np
+import os
+os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
 
 def write_dict_to_hdf5(hdf5_file, data_dict):
 
@@ -59,8 +61,7 @@ class DataLogger:
 		cams = {key: obs[key] for key in obs.keys() if 'cam' in key}
 		# save images
 		if self._save_images:
-			for key in cams:
-				self._update_video_files(obs[key])
+			self._update_video_files(cams)
 
 		# save other sensors data
 		other_sensors = {key: obs[key] for key in obs.keys() if 'cam' not in key}
@@ -80,8 +81,7 @@ class DataLogger:
 		"""
 		for video_id in cam_obs:
 			# Get Frame #
-			img = cam_obs[video_id]
-			del cam_obs[video_id]
+			img = cam_obs[video_id][0]
 
 			# Create Writer And Buffer #
 			if video_id not in self._video_writers:

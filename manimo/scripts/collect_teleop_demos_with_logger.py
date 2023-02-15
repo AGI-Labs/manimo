@@ -1,15 +1,11 @@
 import argparse
-import asyncio
 import glob
 import hydra
 from manimo.environments.single_arm_env import SingleArmEnv
 from manimo.teleoperation.teleop_agent import TeleopAgent
 from manimo.utils.helpers import HOMES
 from manimo.utils.logger import DataLogger
-from multiprocessing import Process, Queue
-import numpy as np
 import os
-from PIL import Image
 import time
 
 # create a single arm environment
@@ -40,7 +36,6 @@ def main():
     task = args.task
     TIME = args.time
     HZ = 5
-    home = HOMES[task]
 
     hydra.initialize(
             config_path="../conf", job_name="collect_demos_test"
@@ -79,19 +74,20 @@ def main():
                 else:
                     action = [arm_action]
             obs = env.step(action)[0]
-            
+            logger.log(obs)
 
             step += 1
             
             end = time.time() - start
-
-            # print(f"took {end} seconds to collect data, {time_before_dump} seconds to obtain observations")
         
         # store the last observation
         env.reset()
+        logger.finish()
+        index += 1
 
         print(f"created new directory!")
         break
 
-    if __name__ == "__main__":
+if __name__ == "__main__":
+    print(f"main function called")
     main()
