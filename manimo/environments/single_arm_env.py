@@ -68,5 +68,8 @@ class SingleArmEnv(Env):
             obs.update(act_obs)
             info.update(act_info)
         for sensor in self.sensors:
-            sensor.stop()
+            sens_obs, sens_info = sensor.reset()
+            obs.update(sens_obs)
+            info.update(sens_info)
+
         return obs, info
