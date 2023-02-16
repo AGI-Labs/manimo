@@ -97,6 +97,10 @@ class ContactMic(Sensor):
             self.observer_proc.terminate()
             self.observer_proc = None
 
+    def reset(self):
+        # TODO(@Jared): Add reset code if required or delete this comment
+        return self.get_obs(), {}
+
     def get_obs(self) -> dict:
         obs = {self.name: None}
         while not self.audio_frame_queue.empty():

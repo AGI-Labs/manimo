@@ -12,5 +12,9 @@ class Gripper(ABC):
         #setup arm with required config
         pass
     @abstractmethod
-    def step(self, action) -> dict:
+    def step(self, action):
+        pass
+
+    @abstractmethod
+    def reset(self):
         pass
