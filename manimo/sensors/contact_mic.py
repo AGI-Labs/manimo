@@ -1,4 +1,5 @@
 import datetime
+import os
 import struct
 import time
 from collections import deque
@@ -59,6 +60,12 @@ class ContactMic(Sensor):
         self.contact_mic_cfg = contact_mic_cfg
         self.name = contact_mic_cfg.name
         self.port = contact_mic_cfg.port
+
+        assert os.path.exists(self.port), (
+            f"Contact mic port {self.port} does not exist. "
+            "Please check that your sensor is connected to this port and try again."
+        )
+
         self.audio_fps = contact_mic_cfg.audio_fps
         self.audio_packet_size = contact_mic_cfg.audio_packet_size
         self.num_channels = contact_mic_cfg.num_channels
