@@ -61,9 +61,15 @@ class SingleArmEnv(Env):
         """
         Reset the environment
         """
-        obs = self.get_obs()
+        obs = dict()
+        info = dict()
         for actuator in self.actuators:
-            actuator.reset()
+            act_obs, act_info = actuator.reset()
+            obs.update(act_obs)
+            info.update(act_info)
         for sensor in self.sensors:
-            sensor.stop()
-        return obs
+            sens_obs, sens_info = sensor.reset()
+            obs.update(sens_obs)
+            info.update(sens_info)
+
+        return obs, info

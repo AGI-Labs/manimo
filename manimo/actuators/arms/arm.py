@@ -13,5 +13,9 @@ class Arm(ABC):
         #setup arm with required config
         pass
     @abstractmethod
-    def step(action):
+    def step(self, action):
+        pass
+
+    @abstractmethod
+    def reset(self):
         pass

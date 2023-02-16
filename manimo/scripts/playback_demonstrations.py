@@ -51,7 +51,7 @@ def main():
 
         user_in = "r"
         while user_in == "r":
-            obs = [env.reset()]
+            obs = [env.reset()[0]]
             user_in = input("Ready. Loaded {} ({} hz):".format(name, hz))
         actions = []
         home, eef_positions, eef_orientations, hz = data["home"], data["eef_pos"], data["eef_rot"], 30

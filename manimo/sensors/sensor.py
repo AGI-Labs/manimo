@@ -30,6 +30,13 @@ class Sensor(ABC):
         stop polling sensor data
         """
 
+    @abstractmethod
+    def reset(self):
+        """
+        reset sensor
+        """
+        pass
+
     # @abstractmethod
     # def set_sampling_rate(hz):
     #     pass

@@ -41,6 +41,9 @@ class FrankaArm(Arm):
         self._go_home()
         self.connect()
 
+        obs = self.get_obs()
+        return obs, {}
+
     def _go_home(self):
         # Create policy instance
         q_initial = self.robot.get_joint_positions()
