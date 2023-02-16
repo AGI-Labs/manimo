@@ -51,15 +51,11 @@ class SingleArmEnv(Env):
         Returns:
             Tuple[ObsDict, float, bool, Dict]: The observations, the reward, whether the episode is done, and any info
         """
-        action_obs = {}
         if actions is not None:
             for i, action in enumerate(actions):
-                action_obs.update(self.actuators[i].step(action))
+                self.actuators[i].step(action)
         self.rate.sleep()
-
-        obs = self.get_obs()
-        obs.update(action_obs)
-        return obs, 0, False, None
+        return self.get_obs(), 0, False, None
 
     def reset(self):
         """
