@@ -52,6 +52,7 @@ class TeleopAgent(Agent):
         hydra.initialize(config_path="./conf", job_name="teleop_agent")
         self.teleop_cfg = hydra.compose(config_name="teleop_config")
         self.teleop = hydra.utils.instantiate(self.teleop_cfg.device)['device']
+        self.use_gripper = self.teleop_cfg.use_gripper
         
         # Initialize variables
         self.robot_origin = {'pos': None, 'quat': None}
@@ -60,7 +61,9 @@ class TeleopAgent(Agent):
 
         self.pos_action_gain = 0.5
         self.rot_action_gain = 0.2
-        self.gripper_action_gain = 1
+
+        if self.use_gripper:
+            self.gripper_action_gain = 1
 
     def get_action(self, obs: ObsDict) -> Optional[np.ndarray]:
         """
@@ -81,7 +84,10 @@ class TeleopAgent(Agent):
 
         robot_pos = obs['eef_pos']
         robot_quat = obs['eef_rot']
-        # robot_gripper_width = obs['eef_gripper_width']
+
+        if self.use_gripper:
+            # TODO: Add gripper action
+            robot_gripper_width = obs['eef_gripper_width']
 
         try:
             # Update arm

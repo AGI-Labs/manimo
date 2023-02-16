@@ -33,9 +33,8 @@ class SingleArmEnv(Env):
         """
         obs = {}
         # Aggregate observations from the sensors
-        # for sensor in self.sensors:
-        #     print(f'updating sensor: {sensor}')
-            # obs.update(sensor.get_obs())
+        for sensor in self.sensors:
+            obs.update(sensor.get_obs())
 
         # Some of the actuators can also have observations
         for actuator in self.actuators:
