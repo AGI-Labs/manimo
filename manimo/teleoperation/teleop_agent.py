@@ -75,11 +75,13 @@ class TeleopAgent(Agent):
         # Obtain info from teleop device
         control_en, grasp_en, vr_pose_curr = self.teleop.get_state()
 
+        print(f"Control: {control_en}, Grasp: {grasp_en}, Pose: {vr_pose_curr}")
+
         vr_pos, vr_quat = vr_pose_curr
 
         robot_pos = obs['eef_pos']
         robot_quat = obs['eef_rot']
-        robot_gripper_width = obs['eef_gripper_width']
+        # robot_gripper_width = obs['eef_gripper_width']
 
         try:
             # Update arm

@@ -135,23 +135,33 @@ class FrankaArm(Arm):
             update_success = False
             time.sleep(wait_time)
         
-        return update_success
+        return update_success, ee_pos_desired, ee_quat_desired, joint_pos_desired
 
     
     def step(self, action):
+        action_obs = {"action_space": self.action_space, "delta": self.delta}
         if self.action_space == ActionSpace.Cartesian:
             if self.ik_mode == IKMode.Polymetis:
-                self._apply_eef_commands(action)
+                command_status, ee_pos_desired, ee_quat_desired, desired_joint_action = self._apply_eef_commands(action)
 
             elif self.ik_mode == IKMode.DMControl:
                 ee_pos_current, ee_quat_current = self.robot.get_ee_pose()
                 cur_joint_positions = self.robot.get_joint_positions().numpy()
                 ee_pos_desired, ee_quat_desired = self._get_desired_pos_quat(action)
-                desired_action, _ = self.mujoco_model.local_inverse_kinematics(ee_pos_desired, ee_quat_desired, ee_pos_current, ee_quat_current, cur_joint_positions)
-                self._apply_joint_commands(desired_action)
+                desired_joint_action, _ = self.mujoco_model.local_inverse_kinematics(ee_pos_desired, ee_quat_desired, ee_pos_current, ee_quat_current, cur_joint_positions)
+                command_status = self._apply_joint_commands(desired_joint_action)
+
+            action_obs["joint_action"] = desired_joint_action
+            action_obs["eef_action"] = (ee_pos_desired, ee_quat_desired)
+            
 
         elif self.action_space == ActionSpace.Joint:
-            self._apply_joint_commands(action)
+            command_status = self._apply_joint_commands(action)
+            action_obs["joint_action"] = action
+            ee_pos_desired, ee_quat_desired = self.robot.robot_model.forward_kinematics(action)
+            action_obs["eef_action"] = ee_pos_desired.numpy(), ee_quat_desired.numpy()
+        
+        return command_status, action_obs
 
 
     def get_obs(self):
