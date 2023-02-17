@@ -1,4 +1,5 @@
 import datetime
+import os
 import struct
 import time
 from collections import deque
@@ -12,9 +13,10 @@ SAMPLE_BLOCK_BYTES = 256 * 2 + 2
 NEWLINE = b"\r\n"
 
 
-def add_audio(
-    contact_mic_cfg: DictConfig, audio_frame_queue: Queue, port: str, hz: float
-):
+def add_audio(audio_frame_queue: Queue, port: str, hz: float):
+    """
+    Read and audio frames to the multiprocessing Queue
+    """
     print("[INFO] Streaming audio")
 
     ser = serial.Serial(port)
@@ -50,13 +52,20 @@ def add_audio(
 
 class ContactMic(Sensor):
     """
-    A Sensor interface class for contact mic that provides a gym style observation wrapper to contact audio.
+    A Sensor interface class for contact mic that provides a gym style
+    observation wrapper to contact audio.
     """
 
     def __init__(self, contact_mic_cfg: DictConfig):
         self.contact_mic_cfg = contact_mic_cfg
         self.name = contact_mic_cfg.name
         self.port = contact_mic_cfg.port
+
+        assert os.path.exists(self.port), (
+            f"Contact mic port {self.port} does not exist. "
+            "Please check that your sensor is connected to this port and try again."
+        )
+
         self.audio_fps = contact_mic_cfg.audio_fps
         self.audio_packet_size = contact_mic_cfg.audio_packet_size
         self.num_channels = contact_mic_cfg.num_channels
@@ -64,8 +73,9 @@ class ContactMic(Sensor):
 
         self.buffer_size = self.window_dur * self.audio_fps // self.audio_packet_size
 
-        self.audio_frame_queue = Queue(self.buffer_size)
+        self.audio_frame_queue = None
         self.observer_proc = None
+        self.baseline = None
 
         self.window = deque(maxlen=self.buffer_size)
 
@@ -73,11 +83,16 @@ class ContactMic(Sensor):
         print(f"[INFO] Contact mic initialized on port {self.port}")
 
     def start(self):
+        """
+        Start the audio stream
+        """
+        if self.audio_frame_queue is None:
+            self.audio_frame_queue = Queue(self.buffer_size)
+
         if self.observer_proc is None:
             self.observer_proc = Process(
                 target=add_audio,
                 args=(
-                    self.contact_mic_cfg,
                     self.audio_frame_queue,
                     self.port,
                     self.audio_fps,
@@ -86,21 +101,44 @@ class ContactMic(Sensor):
             self.observer_proc.start()
 
     def stop(self):
+        """
+        Stop the audio stream
+        """
         if self.observer_proc is not None:
-            self.observer_proc.terminate()
+            self.audio_frame_queue.put(None)
+            self.audio_frame_queue.close()
+            self.audio_frame_queue.join_thread()
+            self.audio_frame_queue = None
+            self.observer_proc.join()
             self.observer_proc = None
 
     def reset(self):
-        # TODO(@Jared): Add reset code if required or delete this comment
-        return self.get_obs(), {}
+        """
+        Reset audio stream, record baseline in default observation
+        """
+        obs = self.get_obs()
+        self.window.clear()
+
+        self._update_baseline()
+        info = {"contact_mic_baseline": self.baseline}
+
+        return obs, info
 
     def get_obs(self) -> dict:
+        """
+        Maintain sliding window of audio frames and return as observation
+        """
         obs = {self.name: None}
         while not self.audio_frame_queue.empty():
             self.window.append(self.audio_frame_queue.get())
+
         if len(self.window) > 0:
             obs[self.name] = list(self.window)
         else:
             print("[WARNING] No audio frames in observation")
 
         return obs
+
+    def _update_baseline(self):
+        # TODO @jared: implement baseline update
+        pass
