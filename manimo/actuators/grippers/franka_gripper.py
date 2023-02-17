@@ -38,7 +38,6 @@ class FrankaGripper(Gripper):
         )
 
     def step(self, action):
-        action_obs = {"gripper_action": action}
         if action is not None:
             if action:
                 self._close_gripper()
@@ -49,9 +48,7 @@ class FrankaGripper(Gripper):
             #     width=action,
             #     speed=self.config.speed,
             #     force=self.config.force,
-            # 
-
-        return action_obs
+            # )
 
     def reset(self):
         """

@@ -73,23 +73,20 @@ class FrankaArm(Arm):
         q_initial = self.robot.get_joint_positions()
         kq = kq_ratio * torch.Tensor(self.kq)
         kqd = kqd_ratio * torch.Tensor(self.kqd)
-        # kq = kq_ratio * torch.Tensor(self.robot.metadata.default_Kq)
-        # kqd = kqd_ratio * torch.Tensor(self.robot.metadata.default_Kqd)
         kx=torch.Tensor(self.robot.metadata.default_Kx)
         kxd=torch.Tensor(self.robot.metadata.default_Kxd)
 
         if action_space == ActionSpace.Joint:
             return JointPDPolicy(
-                    desired_joint_pos=torch.tensor(q_initial),
+                    desired_joint_pos=q_initial,
                     kq=kq, kqd=kqd,
             )
         elif action_space == ActionSpace.Cartesian:
             if self.ik_mode == IKMode.Polymetis:
-                return CartesianPDPolicy(
-                q_initial, True, kq, kqd, kx, kxd)
+                return CartesianPDPolicy(q_initial, True, kq, kqd, kx, kxd)
             elif self.ik_mode == IKMode.DMControl:
                 return JointPDPolicy(
-                    desired_joint_pos=torch.tensor(q_initial),
+                    desired_joint_pos=q_initial,
                     kq=kq, kqd=kqd,
             )
 
@@ -138,14 +135,14 @@ class FrankaArm(Arm):
             update_success = False
             time.sleep(wait_time)
         
-        return update_success, ee_pos_desired, ee_quat_desired, joint_pos_desired
+        return update_success
 
     
     def step(self, action):
-        action_obs = {"action_space": self.action_space, "delta": self.delta}
+        action_obs = {"delta": self.delta}
         if self.action_space == ActionSpace.Cartesian:
             if self.ik_mode == IKMode.Polymetis:
-                command_status, ee_pos_desired, ee_quat_desired, desired_joint_action = self._apply_eef_commands(action)
+                self._apply_eef_commands(action)
 
             elif self.ik_mode == IKMode.DMControl:
                 ee_pos_current, ee_quat_current = self.robot.get_ee_pose()
@@ -154,17 +151,18 @@ class FrankaArm(Arm):
                 desired_joint_action, _ = self.mujoco_model.local_inverse_kinematics(ee_pos_desired, ee_quat_desired, ee_pos_current, ee_quat_current, cur_joint_positions)
                 command_status = self._apply_joint_commands(desired_joint_action)
 
-            action_obs["joint_action"] = desired_joint_action
-            action_obs["eef_action"] = (ee_pos_desired, ee_quat_desired)
+            action_obs["joint_action"] = desired_joint_action.numpy()
+            action_obs["ee_pos_action"] = ee_pos_desired.numpy()
+            action_obs["ee_quat_action"] = ee_quat_desired.numpy()
             
 
         elif self.action_space == ActionSpace.Joint:
             command_status = self._apply_joint_commands(action)
             action_obs["joint_action"] = action
             ee_pos_desired, ee_quat_desired = self.robot.robot_model.forward_kinematics(action)
-            action_obs["eef_action"] = ee_pos_desired.numpy(), ee_quat_desired.numpy()
-        
-        return command_status, action_obs
+            action_obs["ee_pos_action"] = ee_pos_desired.numpy()
+            action_obs["ee_quat_action"] = ee_quat_desired.numpy()
+        return action_obs
 
 
     def get_obs(self):
