@@ -5,6 +5,7 @@ import time
 from collections import deque
 from multiprocessing import Process, Queue
 
+import numpy as np
 import serial
 from manimo.sensors import Sensor
 from omegaconf import DictConfig
@@ -56,7 +57,7 @@ class ContactMic(Sensor):
     observation wrapper to contact audio.
     """
 
-    def __init__(self, contact_mic_cfg: DictConfig):
+    def __init__(self, contact_mic_cfg: DictConfig, baseline_duration: int = 2):
         self.contact_mic_cfg = contact_mic_cfg
         self.name = contact_mic_cfg.name
         self.port = contact_mic_cfg.port
@@ -70,8 +71,11 @@ class ContactMic(Sensor):
         self.audio_packet_size = contact_mic_cfg.audio_packet_size
         self.num_channels = contact_mic_cfg.num_channels
         self.window_dur = contact_mic_cfg.window_dur
+        self.baseline_size = baseline_duration * self.audio_fps // self.audio_packet_size
+        self.include_timestamp = contact_mic_cfg.include_timestamp
 
         self.buffer_size = self.window_dur * self.audio_fps // self.audio_packet_size
+        self.obs_size = self.window_dur * self.audio_fps
 
         self.audio_frame_queue = None
         self.observer_proc = None
@@ -81,6 +85,9 @@ class ContactMic(Sensor):
 
         self.start()
         print(f"[INFO] Contact mic initialized on port {self.port}")
+        print(f"[INFO] Recording contact audio baseline for {baseline_duration} seconds")
+        self._update_baseline()
+        print(f"[INFO] Contact mic baseline set")
 
     def start(self):
         """
@@ -127,18 +134,48 @@ class ContactMic(Sensor):
     def get_obs(self) -> dict:
         """
         Maintain sliding window of audio frames and return as observation
+
+        Returns:
+            dict: observation dictionary with key as sensor name and value as 
+            array of audio frames shape (num_channels, num_samples)
         """
         obs = {self.name: None}
         while not self.audio_frame_queue.empty():
             self.window.append(self.audio_frame_queue.get())
 
         if len(self.window) > 0:
-            obs[self.name] = list(self.window)
+            if self.include_timestamp:
+                obs[self.name] = list(self.window)
+            else:
+                all_audio = []
+                for ser_ints, timestamp in list(self.window):
+                    audio_arr = np.array(list(ser_ints), dtype=int).T
+                    all_audio.append(audio_arr)
+
+                all_audio_arr = np.concatenate(all_audio, axis=1)
+
+                if all_audio_arr.shape[1] != self.obs_size:
+                    # left pad with baseline values
+                    baseline_pad = np.full((self.num_channels, self.obs_size - all_audio_arr.shape[1]), self.baseline)
+                    all_audio_arr = np.concatenate(
+                        (baseline_pad, all_audio_arr), axis=1
+                    )
+                obs[self.name] = all_audio_arr
         else:
             print("[WARNING] No audio frames in observation")
 
         return obs
 
     def _update_baseline(self):
-        # TODO @jared: implement baseline update
-        pass
+        """
+        Update baseline by averaging the first few frames for each channel
+        """
+        baseline_audio = []
+        for _ in range(self.baseline_size):
+            ser_ints = self.audio_frame_queue.get()[0]
+            audio_arr = np.array(list(ser_ints), dtype=int).T
+            baseline_audio.append(audio_arr)
+        
+        baseline = np.concatenate(baseline_audio, axis=1)
+        baseline = np.mean(baseline, axis=1).astype(int)
+        self.baseline = baseline.reshape(self.num_channels, 1)
