@@ -65,7 +65,6 @@ class RealSenseCam(Sensor):
         self.name = camera_cfg.name
         assert(self.device_id in device_ls)
 
-        
         self.rgb_frame_queue = Queue(camera_cfg.buffer_size)
         self.depth_frame_queue = Queue(camera_cfg.buffer_size)
         self.observer_proc = None
@@ -81,6 +80,16 @@ class RealSenseCam(Sensor):
 
     def stop(self):
         self.observer_proc.terminate()
+
+    def reset(self):
+        """
+        reset sensor
+        """
+        # TODO @mohan: implement reset
+        obs = self.get_obs()
+        info = {}
+        return obs, info
+
 
     def get_obs(self):
         # TODO: add support for buffersize > 1
