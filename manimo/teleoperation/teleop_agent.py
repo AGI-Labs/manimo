@@ -57,6 +57,7 @@ class TeleopAgent(Agent):
         self.robot_origin = {'pos': None, 'quat': None}
         self.vr_origin = {'pos': None, 'quat': None}
         self.init_ref = True
+        self.use_gripper = self.teleop_cfg.use_gripper
 
         self.pos_action_gain = 0.5
         self.rot_action_gain = 0.2
@@ -79,7 +80,8 @@ class TeleopAgent(Agent):
 
         robot_pos = obs['eef_pos']
         robot_quat = obs['eef_rot']
-        robot_gripper_width = obs['eef_gripper_width']
+        if self.use_gripper:
+            robot_gripper_width = obs['eef_gripper_width']
 
         try:
             # Update arm
