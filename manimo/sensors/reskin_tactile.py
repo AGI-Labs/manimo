@@ -40,7 +40,7 @@ class ReskinSensor(Sensor):
         """
         pass
     
-    def stop(self):
+    def close(self):
         """
         stop polling sensor data
         """
@@ -62,5 +62,3 @@ class ReskinSensor(Sensor):
         obs = OrderedDict()
         obs["ee_sensing"] = np.array(rs_data[0].data)
         return obs
-
-

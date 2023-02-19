@@ -3,7 +3,7 @@ import os
 import struct
 import time
 from collections import deque
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Value
 
 import numpy as np
 import serial
@@ -14,7 +14,7 @@ SAMPLE_BLOCK_BYTES = 256 * 2 + 2
 NEWLINE = b"\r\n"
 
 
-def add_audio(audio_frame_queue: Queue, port: str, hz: float):
+def add_audio(audio_frame_queue: Queue, port: str, hz: float, closed: Value):
     """
     Read and audio frames to the multiprocessing Queue
     """
@@ -22,7 +22,7 @@ def add_audio(audio_frame_queue: Queue, port: str, hz: float):
 
     ser = serial.Serial(port)
     ser_bytes = ser.read_until(NEWLINE)
-    while True:
+    while not closed.value:
         try:
             if ser.in_waiting:
                 ser_bytes = ser.read(SAMPLE_BLOCK_BYTES)
@@ -36,19 +36,24 @@ def add_audio(audio_frame_queue: Queue, port: str, hz: float):
                     if len(ser_bytes) == SAMPLE_BLOCK_BYTES - 2:
                         ser_ints = list(struct.iter_unpack("<HHHH", ser_bytes))
                         timestamp = ctime.strftime("%H.%M.%S.%f")
-                        audio_frame_queue.put((ser_ints, timestamp))
+
+                        if not closed.value:
+                            audio_frame_queue.put((ser_ints, timestamp))
 
                 else:
                     timestamp = ctime.strftime("%H.%M.%S.%f")
                     print(f"[WARNING] Incomplete packet received at {timestamp}")
-                    ser_bytes = ser.read_until(NEWLINE)
+                    if not closed.value:
+                        ser_bytes = ser.read_until(NEWLINE)
 
                 time.sleep(1 / hz)
 
         except KeyboardInterrupt:
             print("[INFO] Stopping audio stream")
-            ser.close()
             break
+
+    ser.close()
+    print("[INFO] Audio stream closed")
 
 
 class ContactMic(Sensor):
@@ -80,6 +85,7 @@ class ContactMic(Sensor):
         self.audio_frame_queue = None
         self.observer_proc = None
         self.baseline = None
+        self.closed = Value('b', False)
 
         self.window = deque(maxlen=self.buffer_size)
 
@@ -95,6 +101,10 @@ class ContactMic(Sensor):
         """
         if self.audio_frame_queue is None:
             self.audio_frame_queue = Queue(self.buffer_size)
+        else:
+            print("[INFO] Clearing audio frame queue")
+            while not self.audio_frame_queue.empty():
+                self.audio_frame_queue.get()
 
         if self.observer_proc is None:
             self.observer_proc = Process(
@@ -103,20 +113,22 @@ class ContactMic(Sensor):
                     self.audio_frame_queue,
                     self.port,
                     self.audio_fps,
+                    self.closed
                 ),
+                daemon=True
             )
             self.observer_proc.start()
 
-    def stop(self):
+    def close(self):
         """
-        Stop the audio stream
+        Close the audio queue and join the audio stream process
         """
         if self.observer_proc is not None:
-            self.audio_frame_queue.put(None)
+            self.closed.value = True
             self.audio_frame_queue.close()
             self.audio_frame_queue.join_thread()
             self.audio_frame_queue = None
-            self.observer_proc.join()
+            self.observer_proc.terminate()
             self.observer_proc = None
 
     def reset(self):

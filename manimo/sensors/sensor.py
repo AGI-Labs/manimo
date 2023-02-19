@@ -25,9 +25,9 @@ class Sensor(ABC):
         """
     
     @abstractmethod
-    def stop(self):
+    def close(self):
         """
-        stop polling sensor data
+        stop polling sensor data and close processes
         """
 
     @abstractmethod

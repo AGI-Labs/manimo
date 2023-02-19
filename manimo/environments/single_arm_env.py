@@ -73,3 +73,12 @@ class SingleArmEnv(Env):
             info.update(sens_info)
 
         return obs, info
+
+    def close(self):
+        """
+        Resets the actuators and closes the sensors
+        """
+        for actuator in self.actuators:
+            act_obs, act_info = actuator.reset()
+        for sensor in self.sensors:
+            sensor.close()
