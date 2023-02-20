@@ -44,7 +44,7 @@ class OculusQuestReader(TeleopDeviceReader):
         self.controller_id = controller_id
         # LPF filter
         self.vr_pose_filtered = None
-        self.global_to_env_mat = vec_to_reorder_mat([2, 1, -3, 4])
+        self.global_to_env_mat = vec_to_reorder_mat([-3, -1, 2, 4])
         self.vr_to_global_mat = np.eye(4)
         self.reset_orientation = True
 
@@ -63,10 +63,16 @@ class OculusQuestReader(TeleopDeviceReader):
                 print(f"grasp enabled")
             else:
                 print(f"grasp not enabled")
-            if self.reset_orientation:
+            if self.reset_orientation and control_en:
                 self.vr_to_global_mat = np.linalg.inv(np.asarray(transforms[self.controller_id]))
                 self.reset_orientation = False
-            pose_matrix = self.global_to_env_mat @ self.vr_to_global_mat @ np.asarray(transforms[self.controller_id])
+
+            if not control_en:
+                self.reset_orientation = True
+
+            diff_matrix = self.vr_to_global_mat @ np.asarray(transforms[self.controller_id])
+            print(f"diff_matrix: {diff_matrix[:3, 3]}")
+            pose_matrix = self.global_to_env_mat @ diff_matrix
         else:
             control_en = False
             grasp_en = 0
