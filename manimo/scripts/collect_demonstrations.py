@@ -60,7 +60,7 @@ def main():
             os.mkdir("data")
 
         print(f"created new directory!")
-        np.savez(filename, home=home, hz=HZ, joint_pos=joints, eef_pos=eef_positions, eef_rot=eef_orientations)
+        # np.savez(filename, home=home, hz=HZ, joint_pos=joints, eef_pos=eef_positions, eef_rot=eef_orientations)
         break
 if __name__ == "__main__":
     main()
