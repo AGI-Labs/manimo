@@ -68,7 +68,7 @@ def main():
 
             action = agent.get_action(obs)
             if action is not None:
-                arm_action, gripper_action, buttons = action
+                arm_action, gripper_action = action
                 if args.gripper_en:
                     action = [arm_action, gripper_action]
                 else:
