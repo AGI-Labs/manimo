@@ -1,0 +1,9 @@
+gripper0:
+  _target_: manimo.actuators.grippers.Robotiq2fGripper
+  gripper_cfg:
+    server:
+      ip_address: "172.16.0.1"
+      port: 50052
+      comport: "/dev/ttyUSB0"
+    speed: 0.1
+    force: 1.0
