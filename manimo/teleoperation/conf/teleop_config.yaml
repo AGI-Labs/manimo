@@ -5,3 +5,7 @@ use_gripper: false
 nuc_ip: 172.16.0.1
 update_hz: 60
 sensitivity: 0.9
+position_gain: 1.0
+orientation_gain: 0.4
+disable_rot: true # if teleop actions only include (x, y, z) (quat is fixed)
+position_mask: [[0, 0], [1, 0], [0, 1]] # allow positive/negative values for each of the position directions (x, y, z)

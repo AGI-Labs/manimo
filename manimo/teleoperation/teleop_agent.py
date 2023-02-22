@@ -58,29 +58,33 @@ class TeleopAgent(Agent):
         self.vr_origin = {'pos': None, 'quat': None}
         self.init_ref = True
         self.use_gripper = self.teleop_cfg.use_gripper
+        self.disable_rot = self.teleop_cfg.disable_rot
+        self.position_mask = self.teleop_cfg.position_mask
 
         self.pos_action_gain = 0.5
         self.rot_action_gain = 0.2
         self.gripper_action_gain = 1
 
-    def get_action(self, obs: ObsDict) -> Optional[np.ndarray]:
+    def get_action(self, obs: ObsDict, apply_pos_mask: bool = True) -> Optional[np.ndarray]:
         """
         Get the action from the agent
 
         Args:
             obs (ObsDict): The observations
+            apply_pos_mask (bool, optional): Whether to apply the position mask. Defaults to True.
 
         Returns:
             np.ndarray: The action
         """
         # Obtain info from teleop device
         control_en, grasp_en, vr_pose_curr, buttons = self.teleop.get_state()
-
         vr_pos, vr_quat = vr_pose_curr
-
         robot_pos = obs['eef_pos']
         robot_quat = obs['eef_rot']
+
+        # option to use gripper
         if self.use_gripper:
+            # TODO: implement gripper actions
             robot_gripper_width = obs['eef_gripper_width']
 
         try:
@@ -107,17 +111,29 @@ class TeleopAgent(Agent):
 
                 # Add robot origin
                 quat_action = euler_to_quat(euler_action)
-                quat_action = quat_add(self.robot_origin['quat'], quat_action)
-                pos_action += self.robot_origin['pos']
-                        
+
+                # Option to disable rotation
+                if self.disable_rot:
+                    quat_action = self.robot_origin['quat']
+                else:
+                    quat_action = quat_add(self.robot_origin['quat'], quat_action)
+
+                # Option to apply position mask
+                if apply_pos_mask:
+                    for dim, mask_per_dim in enumerate(self.position_mask):
+                        if pos_action[dim] > 0:
+                            pos_action[dim] *= mask_per_dim[0]
+                        else:
+                            pos_action[dim] *= mask_per_dim[1]
+
+                pos_action += self.robot_origin['pos']    
+                arm_action, gripper_action = np.append(pos_action, quat_action), grasp_en
                 
-                action = np.append(pos_action, quat_action), grasp_en, buttons
-                
-                return action
+                return arm_action, gripper_action, buttons
 
             else:
                 self.init_ref = True
-                return None
+                return None, None, buttons
 
         except KeyboardInterrupt:
             print("Session ended by user.")
