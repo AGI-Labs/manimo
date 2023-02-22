@@ -74,7 +74,7 @@ class TeleopAgent(Agent):
             np.ndarray: The action
         """
         # Obtain info from teleop device
-        control_en, grasp_en, vr_pose_curr = self.teleop.get_state()
+        control_en, grasp_en, vr_pose_curr, buttons = self.teleop.get_state()
 
         vr_pos, vr_quat = vr_pose_curr
 
@@ -111,7 +111,7 @@ class TeleopAgent(Agent):
                 pos_action += self.robot_origin['pos']
                         
                 
-                action = np.append(pos_action, quat_action), grasp_en
+                action = np.append(pos_action, quat_action), grasp_en, buttons
                 
                 return action
 

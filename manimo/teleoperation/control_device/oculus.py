@@ -85,4 +85,4 @@ class OculusQuestReader(TeleopDeviceReader):
         vr_quat = rmat_to_quat(rot_mat[:3, :3])
 
         pose = (vr_pos, vr_quat)
-        return control_en, grasp_en, pose
+        return control_en, grasp_en, pose, buttons
