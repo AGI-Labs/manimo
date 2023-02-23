@@ -24,11 +24,15 @@ class FrankaArm(Arm):
         self.JOINT_LIMIT_MIN = arm_cfg.joint_limit_min
         self.JOINT_LIMIT_MAX = arm_cfg.joint_limit_max
         self.robot = RobotInterface(ip_address=self.config.robot_ip, enforce_version=False)
+        self.robot.hz = self.hz
         self.kq = arm_cfg.kq
         self.kqd = arm_cfg.kqd
         self.home = arm_cfg.home if arm_cfg.home is not None else self.robot.get_joint_positions()
         self._setup_mujoco_ik()
         self.reset()
+
+    def set_home(self, home):
+        self.home = home
     
     def connect(self, policy=None, wait=2):
         if policy is None:
@@ -45,15 +49,16 @@ class FrankaArm(Arm):
         return obs, {}
 
     def _go_home(self):
+        home = torch.Tensor(self.home)
+
         # Create policy instance
         q_initial = self.robot.get_joint_positions()
         waypoints = toco.planning.generate_joint_space_min_jerk(
             start=q_initial,
-            goal=torch.Tensor(self.home),
+            goal=home,
             time_to_go=4,
-            hz=50)
-        hz = 50.0
-        rate = Rate(hz)
+            hz=self.hz)
+        rate = Rate(self.hz)
         joint_positions = [waypoint["position"] for waypoint in waypoints]
 
         q_initial = self.robot.get_joint_positions()

@@ -20,6 +20,7 @@ class SingleArmEnv(Env):
             actuators_cfg (DictConfig): The config for the actuators
             hz (float, optional): The rate at which the environment should run. Defaults to 30.
         """
+        # TODO: Add support for accessing the actuators and sensors by name
         self.actuators = [hydra.utils.instantiate(actuators_cfg[actuator_type][actuator]) for actuator_type in actuators_cfg for actuator in actuators_cfg[actuator_type]]
         self.sensors = [hydra.utils.instantiate(sensors_cfg[sensor_type][sensor]) for sensor_type in sensors_cfg for sensor in sensors_cfg[sensor_type]]
         self.rate = Rate(hz)
@@ -51,11 +52,13 @@ class SingleArmEnv(Env):
         Returns:
             Tuple[ObsDict, float, bool, Dict]: The observations, the reward, whether the episode is done, and any info
         """
+        obs = {}
         if actions is not None:
             for i, action in enumerate(actions):
-                self.actuators[i].step(action)
+                obs.update(self.actuators[i].step(action))
         self.rate.sleep()
-        return self.get_obs(), 0, False, None
+        obs.update(self.get_obs())
+        return obs, 0, False, None
 
     def reset(self):
         """
@@ -82,3 +85,16 @@ class SingleArmEnv(Env):
             act_obs, act_info = actuator.reset()
         for sensor in self.sensors:
             sensor.close()
+
+    def set_home(self, new_home=None):
+        """
+        Go home for all the actuators
+
+        Args:
+            new_home (Optional[np.ndarray], optional): The new home position. Defaults to None.
+        """
+        # TODO: Add support for setting the home position for individual actuators
+        for actuator in self.actuators:
+            actuator_set_home = getattr(actuator, "set_home", None)
+            if callable(actuator_set_home):
+                actuator_set_home(new_home)
