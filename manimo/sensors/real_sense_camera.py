@@ -75,8 +75,17 @@ class RealSenseCam(Sensor):
         self.name = camera_cfg.name
         assert(self.device_id in device_ls)
 
-        self.rgb_frame_queue = Queue(camera_cfg.buffer_size)
-        self.depth_frame_queue = Queue(camera_cfg.buffer_size)
+        # window_dur is the duration of the sliding window in seconds
+        self.window_dur = camera_cfg.window_dur
+        if self.window_dur is None:
+            self.buffer_size = 1  # no sliding window, use single frame at self.hz
+            self.window = None
+        else:
+            self.buffer_size = int(self.window_dur * self.hz)
+            self.window = deque(maxlen=self.buffer_size)
+
+        self.rgb_frame_queue = Queue(self.buffer_size)
+        self.depth_frame_queue = Queue(self.buffer_size)
         self.observer_proc = None
         self.camera_cfg = camera_cfg
         self.closed = Value('b', False)
@@ -114,10 +123,19 @@ class RealSenseCam(Sensor):
         return obs, info
 
     def get_obs(self):
-        # TODO: add support for buffersize > 1
+        obs = {self.name: None}
         try:
-            return {self.name: self.rgb_frame_queue.get()}
+            if self.window is None:
+                obs[self.name] = self.rgb_frame_queue.get()
+                
+            else:
+                while not self.rgb_frame_queue.empty():
+                    self.window.append(self.rgb_frame_queue.get())
+
+                obs[self.name] = list(self.window)
+
         except:
             print(f"{self.name} queue is empty")
-            return {self.name: None}
+        
+        return obs
         

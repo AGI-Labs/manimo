@@ -5,8 +5,8 @@ cam0:
       img_height: 480
       hz: 30
       name: "cam0c"
-      device_id: "818312070212"
-      buffer_size: 1
+      device_id: "031222070082"
+      window_dur: null  # number of seconds to track in buffer
       warm_start:
         enabled: True
         frames: 60
