@@ -1,5 +1,7 @@
 defaults:
   - arm: franka_arm
+  - arm/gains@arm.arm0.arm_cfg: franka_record_gains
+  - _self_
 
 # arm:
 #   gains: arm/franka_record_gains
