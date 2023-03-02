@@ -73,7 +73,7 @@ class FrankaArm(Arm):
             self.robot.update_current_policy(
                         {"q_desired": joint_position})
             rate.sleep()
-
+    
     def _default_policy(self, action_space, kq_ratio=1.5, kqd_ratio=1.5):
         q_initial = self.robot.get_joint_positions()
         kq = kq_ratio * torch.Tensor(self.kq)
@@ -81,19 +81,30 @@ class FrankaArm(Arm):
         kx=torch.Tensor(self.robot.metadata.default_Kx)
         kxd=torch.Tensor(self.robot.metadata.default_Kxd)
 
+
         if action_space == ActionSpace.Joint:
-            return JointPDPolicy(
-                    desired_joint_pos=q_initial,
-                    kq=kq, kqd=kqd,
-            )
+            return toco.policies.HybridJointImpedanceControl(
+            joint_pos_current=q_initial,
+            Kq=kq,
+            Kqd=kqd,
+            Kx=kx,
+            Kxd=kxd,
+            robot_model=self.robot.robot_model,
+            ignore_gravity=True,
+        )
         elif action_space == ActionSpace.Cartesian:
             if self.ik_mode == IKMode.Polymetis:
                 return CartesianPDPolicy(q_initial, True, kq, kqd, kx, kxd)
             elif self.ik_mode == IKMode.DMControl:
-                return JointPDPolicy(
-                    desired_joint_pos=q_initial,
-                    kq=kq, kqd=kqd,
-            )
+                return toco.policies.HybridJointImpedanceControl(
+                        joint_pos_current=q_initial,
+                        Kq=kq,
+                        Kqd=kqd,
+                        Kx=kx,
+                        Kxd=kxd,
+                        robot_model=self.robot.robot_model,
+                        ignore_gravity=True,
+                    )
 
     def _setup_mujoco_ik(self):
         self.mujoco_model = MujocoArmModel(self.config)
