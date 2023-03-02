@@ -18,7 +18,7 @@ faulthandler.enable()
 env = SingleArmEnv(sensors_cfg, actuators_cfg)
 obs = env.get_obs()
 
-env.reset()
+# env.reset()
 
 for key in obs:
     print(f"obs key: {key}, values: {obs[key]}")
