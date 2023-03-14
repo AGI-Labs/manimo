@@ -127,7 +127,7 @@ class FrankaArm(Arm):
         q_des_tensor = torch.tensor(np.clip(
             q_des_tensor, self.JOINT_LIMIT_MIN, self.JOINT_LIMIT_MAX))
         try:
-            self.robot.update_current_policy({"q_desired": q_des_tensor.float()})
+            self.robot.update_current_policy({"joint_pos_desired": q_des_tensor.float()})
         except grpc.RpcError:
             self.reset()
 
