@@ -8,6 +8,7 @@ from typing import Any, Callable, Dict, Tuple, TypeVar
 class ActionSpace(Enum):
     Joint='Joint'
     Cartesian='Cartesian'
+    JointOnly='JointOnly'
 
 class IKMode(Enum):
     DMControl='DMControl'
