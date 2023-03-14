@@ -9,7 +9,7 @@ arm0:
     ik_mode: Polymetis # (DMControl, Polymetis)
     joint_limit_min: [-2.8973, -1.7628, -2.8773, -3.0018, -2.8773, 0.0025, -2.8773]
     joint_limit_max: [2.8773, 1.7428, 2.8773, -0.1398, 2.8773, 3.7325, 2.8773]
-    mujoco_xml_path: "/home/nitro/work/agi/control/manimo/manimo/actuators/arms/models/franka/franka_arm.xml"
+    mujoco_xml_path: "${oc.env:MANIMO_PATH}/actuators/arms/models/franka/franka_arm.xml"
     name: "FrankaArm"
     # home: [0.1828, -0.4909, -0.0093, -2.4412, 0.2554, 3.3310, 0.5905]
     home: [-0.1337, 0.3634, -0.1395, -2.3153, 0.1478, 2.7733, -1.1784]
