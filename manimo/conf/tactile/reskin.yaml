@@ -1,6 +1,6 @@
 sensing:
-  _target_: manimo.sensors.reskin_tactile.ReskinSensor
-  sensing_cfg:
+  _target_: manimo.sensors.ReskinSensor
+  config:
     connection_params:
       baudrate: 1000000
       burst_mode: true
