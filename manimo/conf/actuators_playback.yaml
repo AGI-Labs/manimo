@@ -1,7 +1,6 @@
 defaults:
   - arm: franka_arm
-  - arm/gains@arm.arm0.arm_cfg: franka_record_gains
-  - _self_
+  # - gripper: robotiq_gripper
 
 arm:
   arm0:

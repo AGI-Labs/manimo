@@ -48,6 +48,12 @@ class ReskinSensor(Sensor):
             self.sensor_proc.join()
             self.connected = False
 
+    def _update_baseline(self):
+        raw_data = self.sensor_proc.get_data(self.baseline_samples)
+        print("baseline_len: ", len(raw_data))
+        _, _, reskin_data, _ = zip(*raw_data)
+        self.baseline = np.array(reskin_data)
+        
     def reset(self):
         # Record baseline and store in default observation
         obs = self.get_obs()

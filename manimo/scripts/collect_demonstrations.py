@@ -6,6 +6,7 @@ from manimo.utils.helpers import HOMES
 import numpy as np
 import os
 
+
 # create a single arm environment
 def _get_filename(dir, input, task):
     index = 0
@@ -14,6 +15,7 @@ def _get_filename(dir, input, task):
         if n >= index:
             index = n + 1
     return "{}/{}_{}_{}.npz".format(dir, input, task, index)
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -29,14 +31,13 @@ def main():
     home = HOMES[task]
 
     hydra.initialize(
-            config_path="../conf", job_name="collect_demos_test"
-        )
+        version_base="1.1", config_path="../conf", job_name="collect_demos_test"
+    )
 
     actuators_cfg = hydra.compose(config_name="actuators_record")
     sensors_cfg = hydra.compose(config_name="sensors")
 
     env = SingleArmEnv(sensors_cfg, actuators_cfg)
-
     while True:
         filename = _get_filename("data", name, task)
 
@@ -51,6 +52,7 @@ def main():
         for state in range(int(TIME * HZ) - 1):
             observation = env.step()[0]
             joints.append(observation["q_pos"])
+            print(observation["q_pos"])
             eef_positions.append(observation["eef_pos"])
             eef_orientations.append(observation["eef_rot"])
 
@@ -60,7 +62,15 @@ def main():
             os.mkdir("data")
 
         print(f"created new directory!")
-        np.savez(filename, home=home, hz=HZ, joint_pos=joints, eef_pos=eef_positions, eef_rot=eef_orientations)
-        break
+        np.savez(
+            filename,
+            home=home,
+            hz=HZ,
+            joint_pos=joints,
+            eef_pos=eef_positions,
+            eef_rot=eef_orientations,
+        )
+
+
 if __name__ == "__main__":
     main()

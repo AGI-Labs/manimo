@@ -1,12 +1,13 @@
 import argparse
-from ast import arg
 import glob
+import os
 import hydra
 import numpy as np
 from manimo.environments.single_arm_env import SingleArmEnv
 from manimo.utils.helpers import HOMES
 from pathlib import Path
 import torch
+
 
 def _separate_filename(filename):
     split = filename.split("_")
@@ -27,21 +28,25 @@ def _format_out_dict(list_obs, actions, hz, home):
     out_dict["home"] = home
     return out_dict
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("file")
     args = parser.parse_args()
-    demo_path = Path(args.file) 
+    demo_path = Path(args.file)
     name, i = _separate_filename(demo_path.stem)
     num_files = len(glob.glob(f"{demo_path.parents[0]}/{name}_*.npz"))
     data = np.load(args.file)
-    home, eef_positions, eef_orientations, hz = data["home"], data["eef_pos"], data["eef_rot"], 30
+    home, eef_positions, eef_orientations, hz = (
+        data["home"],
+        data["eef_pos"],
+        data["eef_rot"],
+        30,
+    )
 
-    hydra.initialize(
-            config_path="../conf", job_name="replay_demos_test"
-        )
+    hydra.initialize(config_path="../conf", job_name="replay_demos_test")
 
-    actuators_cfg = hydra.compose(config_name="actuators")
+    actuators_cfg = hydra.compose(config_name="actuators_playback")
     sensors_cfg = hydra.compose(config_name="sensors")
 
     env = SingleArmEnv(sensors_cfg, actuators_cfg, hz)
@@ -54,20 +59,30 @@ def main():
             obs = [env.reset()[0]]
             user_in = input("Ready. Loaded {} ({} hz):".format(name, hz))
         actions = []
-        home, eef_positions, eef_orientations, hz = data["home"], data["eef_pos"], data["eef_rot"], 30
-        joints = data["joint_pos"]
+        home, eef_positions, eef_orientations, hz = (
+            data["home"],
+            data["eef_pos"],
+            data["eef_rot"],
+            30,
+        )
+        joint_traj = data["joint_pos"]
         # Execute trajectory
-        for i in range(len(eef_positions)):
-            action = torch.Tensor(np.append(eef_positions[i], eef_orientations[i]))
-            # action = torch.Tensor(joints[i])
-            actions.append(action)
-            obs.append(env.step([action])[0])
+        for joints in joint_traj:
+            # action = torch.Tensor(np.append(eef_positions[j], eef_orientations[j]))
+            with torch.no_grad():
+                action = torch.Tensor(joints)
+                actions.append(action.numpy())
+                obs.append(env.step([action])[0])
         env.reset()
 
-        # out_dict = _format_out_dict(obs, np.array(actions), hz, home)
-        # np.savez("playbacks/{}_{}.npz".format(name, i), **out_dict)
+        out_dict = _format_out_dict(obs, np.array(actions), hz, home)
+        try:
+            np.savez("playbacks/{}_{}.npz".format(name, i), **out_dict)
+        except FileNotFoundError:
+            os.makedirs("playbacks")
+            np.savez("playbacks/{}_{}.npz".format(name, i), **out_dict)
         input("Next?")
 
+
 if __name__ == "__main__":
-   
     main()

@@ -1,0 +1,14 @@
+sensing:
+  _target_: manimo.sensors.ReskinSensor
+  config:
+    connection_params:
+      baudrate: 1000000
+      burst_mode: true
+      num_mags: 16
+      port: "/dev/ttyACM0"
+      temp_filtered: true
+      reskin_data_struct: true
+    limits:
+      high: 20000.0
+      low: -20000.0
+    num_baseline_samples: 100
