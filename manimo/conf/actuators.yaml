@@ -1,3 +1,3 @@
 defaults:
   - arm: franka_arm
-  - gripper: robotiq_gripper
+  - gripper: polymetis_gripper

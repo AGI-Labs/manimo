@@ -52,7 +52,7 @@ def main():
         for state in range(int(TIME * HZ) - 1):
             observation = env.step()[0]
             joints.append(observation["q_pos"])
-            print(observation["q_pos"])
+
             eef_positions.append(observation["eef_pos"])
             eef_orientations.append(observation["eef_rot"])
 
