@@ -1,5 +1,6 @@
 defaults:
   - arm: franka_arm
+  - gripper: polymetis_gripper
   - arm/gains@arm.arm0.arm_cfg: franka_record_gains
   - _self_
 

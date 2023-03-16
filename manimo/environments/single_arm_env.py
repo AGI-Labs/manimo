@@ -22,7 +22,9 @@ class SingleArmEnv(Env):
         """
         # TODO: Add support for accessing the actuators and sensors by name
         self.actuators = [hydra.utils.instantiate(actuators_cfg[actuator_type][actuator]) for actuator_type in actuators_cfg for actuator in actuators_cfg[actuator_type]]
-        self.sensors = [hydra.utils.instantiate(sensors_cfg[sensor_type][sensor]) for sensor_type in sensors_cfg for sensor in sensors_cfg[sensor_type]]
+        self.sensors = []
+        if sensors_cfg:
+            self.sensors = [hydra.utils.instantiate(sensors_cfg[sensor_type][sensor]) for sensor_type in sensors_cfg for sensor in sensors_cfg[sensor_type]]
         self.rate = Rate(hz)
     
     def get_obs(self) -> ObsDict:
