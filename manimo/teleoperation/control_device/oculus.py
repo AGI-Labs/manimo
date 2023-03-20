@@ -21,12 +21,12 @@ def get_button_labels(controller_id: str) -> dict:
     if controller_id == "r":
         return {
             "control_en": "rightGrip",
-            "grasp_en": "A",
+            "grasp_en": "RTr",
         }
     else:
         return {
             "control_en": "leftGrip",
-            "grasp_en": "X",
+            "grasp_en": "LTr",
         }
 
 class OculusQuestReader(TeleopDeviceReader):

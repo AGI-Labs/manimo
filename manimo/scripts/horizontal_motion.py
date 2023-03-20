@@ -21,7 +21,7 @@ env.reset()
 
 start_time = time.time()
 total_time = 60
-delta = 1e-2
+delta = 5e-2
 
 while time.time() - start_time < total_time:
     print(time.time())

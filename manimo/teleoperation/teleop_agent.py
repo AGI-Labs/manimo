@@ -61,9 +61,22 @@ class TeleopAgent(Agent):
         self.disable_rot = self.teleop_cfg.disable_rot
         self.position_mask = self.teleop_cfg.position_mask
 
-        self.pos_action_gain = 0.5
-        self.rot_action_gain = 0.2
+        self.pos_action_gain = 3
+        self.rot_action_gain = 6
         self.gripper_action_gain = 1
+        self.max_lin_vel = 1
+        self.max_rot_vel = 1
+
+    def _limit_velocity(self, lin_vel, rot_vel):
+        """Scales down the linear and angular magnitudes of the action"""
+        lin_vel_norm = np.linalg.norm(lin_vel)
+        rot_vel_norm = np.linalg.norm(rot_vel)
+        if lin_vel_norm > self.max_lin_vel:
+            lin_vel = lin_vel * self.max_lin_vel / lin_vel_norm
+        if rot_vel_norm > self.max_rot_vel:
+            rot_vel = rot_vel * self.max_rot_vel / rot_vel_norm
+        
+        return lin_vel, rot_vel
 
     def get_action(self, obs: ObsDict, apply_pos_mask: bool = True) -> Optional[np.ndarray]:
         """
@@ -97,37 +110,35 @@ class TeleopAgent(Agent):
                     self.init_ref = False
 
                 # Calculate Positional Action
+                robot_pos_offset = robot_pos - self.robot_origin['pos']
                 target_pos_offset = vr_pos - self.vr_origin['pos']
-                pos_action = target_pos_offset
+                pos_action = target_pos_offset - robot_pos_offset
 
                 # Calculate Euler Orientation Action
                 target_quat_offset = quat_diff(vr_quat, self.vr_origin['quat'])
                 quat_action = target_quat_offset
                 euler_action = quat_to_euler(quat_action)
 
+                # Add robot origin
+                quat_action = euler_to_quat(euler_action)
+
+                 # Calculate Euler Action #
+                robot_quat_offset = quat_diff(robot_quat, self.robot_origin['quat'])
+                target_quat_offset = quat_diff(vr_quat, self.vr_origin['quat'])
+                quat_action = quat_diff(target_quat_offset, robot_quat_offset)
+                # quat_action = robot_quat_offset
+                euler_action = quat_to_euler(quat_action)
+
                 # Scale Appropriately
                 pos_action *= self.pos_action_gain
                 euler_action *= self.rot_action_gain
 
-                # Add robot origin
-                quat_action = euler_to_quat(euler_action)
+                # pos_action += self.robot_origin['pos']    
+                #arm_action, gripper_action = np.append(pos_action, quat_action), grasp_en
+                pos_vel, euler_vel = self._limit_velocity(pos_action, euler_action)
+                # arm_action, gripper_action = np.append(pos_action, euler_action), grasp_en
+                arm_action, gripper_action = np.append(pos_vel, euler_vel), grasp_en
 
-                # Option to disable rotation
-                if self.disable_rot:
-                    quat_action = self.robot_origin['quat']
-                else:
-                    quat_action = quat_add(self.robot_origin['quat'], quat_action)
-
-                # Option to apply position mask
-                if apply_pos_mask:
-                    for dim, mask_per_dim in enumerate(self.position_mask):
-                        if pos_action[dim] > 0:
-                            pos_action[dim] *= mask_per_dim[0]
-                        else:
-                            pos_action[dim] *= mask_per_dim[1]
-
-                pos_action += self.robot_origin['pos']    
-                arm_action, gripper_action = np.append(pos_action, quat_action), grasp_en
                 
                 return arm_action, gripper_action, buttons
 

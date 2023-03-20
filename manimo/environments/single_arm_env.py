@@ -57,6 +57,8 @@ class SingleArmEnv(Env):
         obs = {}
         if actions is not None:
             for i, action in enumerate(actions):
+                # import pdb; pdb.set_trace()
+                # self.actuators[i].step(action)
                 obs.update(self.actuators[i].step(action))
         self.rate.sleep()
         obs.update(self.get_obs())

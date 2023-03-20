@@ -1,0 +1,2 @@
+defaults:
+  - gripper: franka_gripper

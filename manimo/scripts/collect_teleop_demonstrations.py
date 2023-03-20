@@ -80,9 +80,10 @@ def main():
 
 
         user_in = "r"
-        while user_in == "r":
-            obs, _ = env.reset()
-            user_in = input("Ready. Recording {}".format(filename))
+        # while user_in == "r":
+        obs, _ = env.reset()
+        # user_in = input("Ready. Recording {}".format(filename))
+        
 
         joints = []
         eef_positions = []

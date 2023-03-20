@@ -1,3 +1,4 @@
+
 gripper0:
   _target_: manimo.actuators.grippers.PolymetisGripper
   gripper_cfg:
