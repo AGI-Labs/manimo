@@ -3,6 +3,9 @@ from multiprocessing import Process, Queue, Value
 import time
 from typing import Optional
 
+from manimo.sensors import Sensor
+from manimo.utils.helpers import Rate
+
 import cv2
 import numpy as np
 from omegaconf import DictConfig
@@ -26,6 +29,7 @@ def add_image(camera_cfg, rgb_frame_queue: Queue, closed: Value):
     image_right = sl.Mat()
 
     step = 0
+    rate = Rate(camera_cfg.hz)
     try:
         while not closed.value:
             err = cam.grab(runtime)
@@ -48,12 +52,15 @@ def add_image(camera_cfg, rgb_frame_queue: Queue, closed: Value):
                     rgb_frame_queue.get(block=False)
                 except:
                     pass
+
+            rate.sleep()
+            step += 1
                             
-                    time.sleep(1./camera_cfg.hz)
-                    step += 1
     except KeyboardInterrupt:
         cam.close()
         print("[INFO] Camera stream closed")
+
+    
 
 class ZedCam(Sensor):
     """
