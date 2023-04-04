@@ -1,4 +1,5 @@
 from manimo.sensors import Sensor
+from manimo.utils.helpers import Rate
 from multiprocessing import Process, Queue, Value
 import numpy as np
 from omegaconf import DictConfig
@@ -25,8 +26,9 @@ def add_image(camera_cfg: DictConfig, rgb_frame_queue: Queue, depth_frame_queue:
 
     align = rs.align(rs.stream.color)
     step = 0
-    while not closed.value:
-        try:
+    rate = Rate(hz)
+    try:
+        while not closed.value:
             frames = pipe.poll_for_frames()
             if (frames.is_frameset()):
                     align.process(frames)
@@ -48,16 +50,12 @@ def add_image(camera_cfg: DictConfig, rgb_frame_queue: Queue, depth_frame_queue:
                             depth_frame_queue.get(block=False)
                         except:
                             pass
-                            
-                    time.sleep(1./hz)
-                    step += 1
 
-        except KeyboardInterrupt:
-            print("[INFO] Stopping camera stream")
-            break
+            rate.sleep()
+            step += 1
 
-    print("[INFO] Camera stream closed")
-                    
+    except KeyboardInterrupt:
+        print("[INFO] Camera stream closed")                    
 
 class RealSenseCam(Sensor):
     """
