@@ -10,11 +10,11 @@ import cv2
 import numpy as np
 from omegaconf import DictConfig
 import pyzed.sl as sl
-from sensor import Sensor
+from manimo.sensors import Sensor
 
 def add_image(camera_cfg, rgb_frame_queue: Queue, closed: Value):
 
-    cam = sl.Camera(cam_cfg.device_id)
+    cam = sl.Camera(camera_cfg.device_id)
     
     init = sl.InitParameters(
 				camera_resolution=sl.RESOLUTION.HD720,
@@ -45,7 +45,7 @@ def add_image(camera_cfg, rgb_frame_queue: Queue, closed: Value):
                 raise Exception(f"grabbing image failed with error code: {err}")
 
             try:
-                rgb_frame_queue.put((color_images, color_timestamp), block=False)
+                rgb_frame_queue.put((color_images[0], color_images[1], color_timestamp), block=False)
             except:
                 # queue is full, drop the oldest frame
                 try:
@@ -110,11 +110,12 @@ class ZedCam(Sensor):
 
     def get_obs(self):
         name = self.cam_cfg.name
-        obs = {name: None}
+        obs = {}
         try:
             if self.window is None:
-                obs[name] = self.rgb_frame_queue.get()
-                
+                left_im, right_im, ts = self.rgb_frame_queue.get() 
+                obs[f"{name}_left"] = left_im
+                obs[f"{name}_right"] = right_im
             else:
                 while not self.rgb_frame_queue.empty():
                     self.window.append(self.rgb_frame_queue.get())

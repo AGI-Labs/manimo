@@ -14,7 +14,7 @@ def add_image(camera_cfg: DictConfig, rgb_frame_queue: Queue, depth_frame_queue:
 
     config.enable_device(camera_cfg.device_id)
     config.enable_stream(rs.stream.depth, camera_cfg.img_width, camera_cfg.img_height, rs.format.z16, camera_cfg.hz)
-    config.enable_stream(rs.stream.color, camera_cfg.img_width, camera_cfg.img_height, rs.format.bgr8, camera_cfg.hz)
+    config.enable_stream(rs.stream.color, camera_cfg.img_width, camera_cfg.img_height, rs.format.rgb8, camera_cfg.hz)
     
     pipe.start(config)
 

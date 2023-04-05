@@ -25,10 +25,12 @@ def _get_filename(dir, input, task):
             index = n + 1
     return "{}/{}_{}_{}.h5".format(dir, input, task, index), index
 
+
 class ButtonState(Enum):
     OFF = 0,
     INPROGRESS = 1,
     ON = 2
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -39,8 +41,6 @@ def main():
 
     args = parser.parse_args()
     name = args.name
-    TIME = args.time
-    HZ = 30
 
     hydra.initialize(
             config_path="../conf", job_name="collect_demos_test"
@@ -48,17 +48,18 @@ def main():
 
     actuators_cfg = hydra.compose(config_name="actuators")
     sensors_cfg = hydra.compose(config_name="sensors")
-    print(f'sensors_cfg: {sensors_cfg}')
+    env_cfg = hydra.compose(config_name="env")
 
-    env = SingleArmEnv(sensors_cfg, actuators_cfg, hz=HZ)
+    env = SingleArmEnv(sensors_cfg, actuators_cfg, env_cfg)
     hydra.core.global_hydra.GlobalHydra.instance().clear()
 
     agent = TeleopAgent()
 
     obs, info = env.reset()
 
-    fname = f"{name}.h5"
+    step = 0
     while True:
+        fname = f"{name}_{step}.h5"
         save_path = os.path.join(args.path, fname)
         logger = DataLogger(save_path, save_images=True)
 
@@ -77,9 +78,11 @@ def main():
 
         apply_rot_mask = False
         logging = False
+        log_toggle = False
+        rotation_toggle = False
+        apply_rot_mask = False
 
-
-
+        print(f"ready to collect demos!")
         while True:
         # for _ in range(int(TIME * HZ) - 1):
             arm_action, gripper_action, buttons = agent.get_action(
@@ -91,65 +94,65 @@ def main():
                 rotation_toggle = buttons['B']
             # print(f"got an action from then agent")
 
-                if rotation_toggle and apply_rot_state == ButtonState.OFF:
-                    apply_rot_mask = True
-                    apply_rot_state = ButtonState.INPROGRESS
-                    print('applying rot_mask')
+                if log_toggle:
+                    log_state = ButtonState.INPROGRESS
 
-                if rotation_toggle and apply_rot_state == ButtonState.ON:
-                    apply_rot_mask = False
-                    apply_rot_state = ButtonState.INPROGRESS
-                    print('disabling rot_mask')
+                # if rotation_toggle and apply_rot_state == ButtonState.OFF:
+                #     apply_rot_mask = True
+                #     apply_rot_state = ButtonState.INPROGRESS
+                #     print('applying rot_mask')
 
-            if log_toggle and log_state == ButtonState.OFF:
-                logging = True
-                log_state == ButtonState.INPROGRESS
-                print('starting logging')
+                # if rotation_toggle and apply_rot_state == ButtonState.ON:
+                #     apply_rot_mask = False
+                #     apply_rot_state = ButtonState.INPROGRESS
+                #     print('disabling rot_mask')
 
-            if log_toggle and log_state == ButtonState.ON:
-                logging = False
-                log_state == ButtonState.INPROGRESS
-                print('stopping logging')
+                if not log_toggle and log_state == ButtonState.INPROGRESS:
+                    logging = not logging
+                    log_state = ButtonState.OFF
 
+                    if not logging:
+                        print(f"logger closed")
+                        logger.finish()
+                        break
 
             if arm_action is not None:
                 zero_actions = np.zeros_like(arm_action[:3])
                 if apply_rot_mask:
                     arm_action[:3] = zero_actions
                     apply_rot_state = ButtonState.ON
-                else:
-                    apply_rot_state = ButtonState.OFF
+                # else:
+                #     apply_rot_state = ButtonState.OFF
 
                 if args.gripper_en:
-                    print(f"using gripper action")
-                    action = [arm_action, gripper_action]
+                    action = [arm_action, not gripper_action]
                 else:
-                    print(f"not using gripper action")
                     action = [arm_action]
             else:
                 action = None
+            
             obs = env.step(action)[0]
 
             if logging and action is not None:
                 # print(f"action: {action}")
-
+                print(f"logging obs")
                 logger.log(obs)
                 num_obs += 1
 
-            if logging:
-                log_state = ButtonState.ON
-            else:
-                log_state = ButtonState.OFF
+
+            # if not log_toggle and log_state == ButtonState.INPROGRESS:
+            #     if logging:
+            #         log_state = ButtonState.ON
+            #         print(f"logger started!")
+            #     else:
+            #         log_state = ButtonState.OFF
+            #         logger.finish()
+            #         print(f"logger closed!")
+            #     break
+                # log_state = ButtonState.OFF
 
 
-            
-        print(f'trigger logger finish')
-        logger.finish()
-        print('logger finished')
-
-        print(f'number of observations to be logged: {num_obs}')
-        print("created new directory!")
-
+        
         env.reset()
         env.close()
 

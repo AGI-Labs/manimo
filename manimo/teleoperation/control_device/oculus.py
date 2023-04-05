@@ -59,10 +59,10 @@ class OculusQuestReader(TeleopDeviceReader):
         if transforms:
             control_en = buttons[button_labels["control_en"]][0] > 0.9
             grasp_en = buttons[button_labels["grasp_en"]]
-            if grasp_en:
-                print(f"grasp enabled")
-            else:
-                print(f"grasp not enabled")
+            # if grasp_en:
+            #     print(f"grasp enabled")
+            # else:
+            #     print(f"grasp not enabled")
             if self.reset_orientation and control_en:
                 self.vr_to_global_mat = np.linalg.inv(np.asarray(transforms[self.controller_id]))
                 self.reset_orientation = False
@@ -71,7 +71,7 @@ class OculusQuestReader(TeleopDeviceReader):
                 self.reset_orientation = True
 
             diff_matrix = self.vr_to_global_mat @ np.asarray(transforms[self.controller_id])
-            print(f"diff_matrix: {diff_matrix[:3, 3]}")
+            # print(f"diff_matrix: {diff_matrix[:3, 3]}")
             pose_matrix = self.global_to_env_mat @ diff_matrix
         else:
             control_en = False

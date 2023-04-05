@@ -47,6 +47,7 @@ class PolymetisGripper(Gripper):
                 speed=self.config.speed,
                 force=self.config.force,
             )
+        return self.get_obs()
 
     def reset(self):
         """

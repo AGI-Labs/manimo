@@ -202,6 +202,8 @@ class FrankaArm(Arm):
 
     def step(self, action):
         action_obs = {"delta": self.delta}
+
+        # import pdb; pdb.set_trace()
         if self.action_space == ActionSpace.Cartesian:
             if self.ik_mode == IKMode.Polymetis:
                 self._apply_eef_commands(action)
@@ -212,11 +214,9 @@ class FrankaArm(Arm):
                 ee_pos_desired, ee_quat_desired = self._get_desired_pos_quat(action)
 
                 robot_state = self.get_robot_state()[0]
-                print(action)
                 joint_velocity = self._ik_solver.cartesian_velocity_to_joint_velocity(action, robot_state=robot_state)
 
                 joint_delta = self._ik_solver.joint_velocity_to_delta(joint_velocity)
-                print(joint_delta)
                 desired_joint_action = joint_delta + self.robot.get_joint_positions().numpy()
 
                 # desired_joint_action, _ = self.mujoco_model.local_inverse_kinematics(ee_pos_desired, ee_quat_desired, ee_pos_current, ee_quat_current, cur_joint_positions)
@@ -230,7 +230,7 @@ class FrankaArm(Arm):
             command_status = self._apply_joint_commands(action)
             action_obs["joint_action"] = action
             ee_pos_desired, ee_quat_desired = self.robot.robot_model.forward_kinematics(
-                action
+                torch.tensor(action)
             )
             action_obs["ee_pos_action"] = ee_pos_desired.numpy()
             action_obs["ee_quat_action"] = ee_quat_desired.numpy()
