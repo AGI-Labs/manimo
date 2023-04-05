@@ -11,7 +11,7 @@ class SingleArmEnv(Env):
     """
     A single arm manipulation environment with an actuator and various sensors
     """
-    def __init__(self, sensors_cfg: DictConfig, actuators_cfg: DictConfig, hz=30.):
+    def __init__(self, sensors_cfg: DictConfig, actuators_cfg: DictConfig, env_cfg: DictConfig):
         """
         Initialize the environment with all the actuators and sensors based on the config
 
@@ -25,7 +25,8 @@ class SingleArmEnv(Env):
         self.sensors = []
         if sensors_cfg:
             self.sensors = [hydra.utils.instantiate(sensors_cfg[sensor_type][sensor]) for sensor_type in sensors_cfg for sensor in sensors_cfg[sensor_type]]
-        self.rate = Rate(hz)
+
+        self.rate = Rate(env_cfg.hz)
     
     def get_obs(self) -> ObsDict:
         """
@@ -57,7 +58,6 @@ class SingleArmEnv(Env):
         obs = {}
         if actions is not None:
             for i, action in enumerate(actions):
-                # import pdb; pdb.set_trace()
                 # self.actuators[i].step(action)
                 obs.update(self.actuators[i].step(action))
         self.rate.sleep()
