@@ -5,4 +5,4 @@ defaults:
 arm:
   arm0:
     arm_cfg:
-      action_space: JointOnly
+      action_space: Joint

@@ -1,0 +1,13 @@
+cam0:
+  _target_: manimo.sensors.ZedCam
+  cam_cfg:
+    img_width: 1280
+    img_height: 720
+    hz: 30
+    name: "cam0"
+    device_id: "15034562"
+    buffer_size: 1
+    window_dur: null
+    warm_start:
+      enabled: True
+      frames: 60
