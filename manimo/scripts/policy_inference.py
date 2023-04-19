@@ -1,0 +1,112 @@
+import yaml, hydra, torch
+from manimo.environments.single_arm_env import SingleArmEnv
+import numpy as np
+import cv2
+from pathlib import Path
+from dataloaders.utils import get_transform_by_name
+from scipy.spatial.transform import Rotation as R
+
+def quat_to_euler(quat, degrees=False):
+    euler = R.from_quat(quat).as_euler('xyz', degrees=degrees)
+    return euler
+
+class AIAgent:
+    def __init__(self, base_path):
+        agent_config = yaml.safe_load(open(Path(base_path, 'agent_config.yaml'), 'r'))
+        agent = hydra.utils.instantiate(agent_config)
+        agent.load_state_dict(torch.load(Path(base_path, 'pick_nsh_initsweep.ckpt'), map_location='cpu')['model'])
+        self.agent = agent.eval().cuda()
+        self.transform = get_transform_by_name('preproc')
+
+    def get_action(self, raw_imgs, raw_obs):
+        obs = torch.from_numpy(raw_obs).float()[None].cuda()
+        img = self.transform(torch.from_numpy(raw_imgs).float() / 255)[None].cuda()
+        with torch.no_grad():
+            acs = self.agent.get_actions(img, obs)
+        return acs.cpu().numpy()[0]
+    
+def get_raw_imgs_and_obs(env_obs, IMG_SIZE=512):
+    cam_keys = ['cam0_left', 'cam1_left']
+    obs_keys = ['eef_pos', 'eef_rot', 'eef_gripper_width']
+
+    imgs = [env_obs[cam_key][0] for cam_key in cam_keys]
+    # append obs to raw_obs
+    raw_obs = []
+    for obs_key in obs_keys:
+        if obs_key == 'eef_rot':
+            raw_obs.extend(quat_to_euler(env_obs[obs_key]))
+        else:
+            if obs_key == 'eef_gripper_width':
+                raw_obs.extend([env_obs[obs_key]])
+            else:
+                raw_obs.extend(env_obs[obs_key])
+    
+    resized_imgs = [cv2.resize(img, (IMG_SIZE, IMG_SIZE)) for img in imgs]
+
+    # change dimension to 3, IMG_SIZE, IMG_SIZE
+    imgs = [np.transpose(img, (2, 0, 1)) for img in resized_imgs]
+    raw_imgs = np.stack(imgs, axis=0)
+
+
+    return raw_imgs, np.array(raw_obs)
+
+def main():
+    model_idx = 8
+    base_path = f'/home/sudeep/Downloads/pick_nsh_initsweep/run{model_idx}_franka_r3m/'
+    
+    NUM_IMGS = 2
+    IMG_SIZE = 512
+    ACTION_DIM = 7
+
+    cam_keys = ['cam0_left', 'cam1_left']
+    obs_keys = ['eef_pos', 'eef_rot', 'eef_gripper_width']
+
+    # raw_imgs = np.zeros((NUM_IMGS, 3, IMG_SIZE, IMG_SIZE), dtype=np.uint8)
+    # raw_obs = np.zeros((ACTION_DIM,)) # get from obs dict
+
+    agent = AIAgent(base_path)
+
+    hydra.initialize(
+            config_path="../conf", job_name="policy_inference"
+        )
+    
+    # create the environment
+    actuators_cfg = hydra.compose(config_name="actuators")
+    sensors_cfg = hydra.compose(config_name="sensors")
+    env_cfg = hydra.compose(config_name="env")
+
+    env = SingleArmEnv(sensors_cfg, actuators_cfg, env_cfg)
+
+
+    obs, info = env.reset()
+    raw_imgs, raw_obs = get_raw_imgs_and_obs(obs)
+
+    MAX_STEPS = 300
+    while True:
+        step = 0
+
+        while step < MAX_STEPS:
+            # action can be a list, use the list of actions for future len(list) steps before calling get action again
+            with torch.no_grad():
+                acs = agent.get_action(raw_imgs, raw_obs)
+            
+            if len(acs.shape) == 1:
+                acs = [acs]
+            for ac in acs:
+                arm_action = ac[:6]
+                gripper_action = ac[6]
+                obs, info, _, _ = env.step([arm_action, gripper_action])
+                print(f"Step: {step}, Action: {ac}")
+                raw_imgs, raw_obs = get_raw_imgs_and_obs(obs)
+                step += 1
+                if step >= MAX_STEPS:
+                    break
+        print(f"done, reseting env")
+        env.reset()
+
+        # wait for enter key to continue
+        input("Press Enter to continue...")
+        print("Continuing...")
+
+if __name__ == '__main__':
+    main()

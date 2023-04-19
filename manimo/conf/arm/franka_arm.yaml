@@ -11,7 +11,7 @@ arm0:
     joint_limit_max: [2.8773, 1.7428, 2.8773, -0.1398, 2.8773, 3.7325, 2.8773]
     mujoco_xml_path: "${oc.env:MANIMO_PATH}/actuators/arms/models/franka/franka_arm.xml"
     name: "FrankaArm"
-    home: [-0.1071, -0.2530,  0.0952, -2.2119,  0.0070,  1.9176,  1.6673] # pick cube home
+    home: [-0.0369, -0.3705,  0.2081, -2.1827,  0.0214,  1.7702,  0.1163] # pick cube home
     # home: null
     # nsh home
     # pen home: [-0.0373,  0.1462,  0.1341, -1.8546, -0.0561,  2.0768,  0.1067]

@@ -5,6 +5,8 @@ import torch
 from scipy.spatial.transform import Rotation as R
 from typing import Optional
 
+action_scaler = 10
+
 def quat_to_euler(quat, degrees=False):
     euler = R.from_quat(quat).as_euler('xyz', degrees=degrees)
     return euler
@@ -140,7 +142,7 @@ class TeleopAgent(Agent):
                 arm_action, gripper_action = np.append(pos_vel, euler_vel), grasp_en
 
                 
-                return arm_action, gripper_action, buttons
+                return arm_action*action_scaler, gripper_action, buttons
 
             else:
                 self.init_ref = True

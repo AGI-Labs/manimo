@@ -80,13 +80,13 @@ class DataLogger:
 			cam_obs (dict): The current observation.
 		"""
 		for video_id in cam_obs:
-			# Get Frame #
-			img = cam_obs[video_id][0]
+			# Get Frame and timestamp (disgarded)
+			img, ts = cam_obs[video_id]
 
 			# Create Writer And Buffer #
 			if video_id not in self._video_writers:
 				filename = self.create_video_file(video_id, '.mp4')
-				self._video_writers[video_id] = imageio.get_writer(filename, macro_block_size=1)
+				self._video_writers[video_id] = imageio.get_writer(filename, macro_block_size=1, fps=30)
 				run_threaded_command(self._write_from_queue, args=
 						(self._video_writers[video_id].append_data, self._data_queue_dict[video_id]))
 

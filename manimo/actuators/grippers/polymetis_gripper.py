@@ -38,6 +38,7 @@ class PolymetisGripper(Gripper):
         self._gripper_interface.grasp(speed=self.config.speed, force=self.config.force)
 
     def step(self, action):
+        obs = {}
         if action is not None:
             action = np.clip(
                 action, self.action_space.low[0], self.action_space.high[0]
@@ -47,7 +48,8 @@ class PolymetisGripper(Gripper):
                 speed=self.config.speed,
                 force=self.config.force,
             )
-        return self.get_obs()
+        obs["eef_gripper_action"] = action
+        return obs
 
     def reset(self):
         """

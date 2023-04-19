@@ -201,7 +201,8 @@ class FrankaArm(Arm):
         return update_success
 
     def step(self, action):
-        action_obs = {"delta": self.delta}
+        action_obs = {"delta": self.delta, 'action': action.copy()
+                      }
 
         # import pdb; pdb.set_trace()
         if self.action_space == ActionSpace.Cartesian:
@@ -211,10 +212,11 @@ class FrankaArm(Arm):
             elif self.ik_mode == IKMode.DMControl:
                 ee_pos_current, ee_quat_current = self.robot.get_ee_pose()
                 cur_joint_positions = self.robot.get_joint_positions().numpy()
-                ee_pos_desired, ee_quat_desired = self._get_desired_pos_quat(action)
+                unscaled_action = action/10
+                ee_pos_desired, ee_quat_desired = self._get_desired_pos_quat(unscaled_action)
 
                 robot_state = self.get_robot_state()[0]
-                joint_velocity = self._ik_solver.cartesian_velocity_to_joint_velocity(action, robot_state=robot_state)
+                joint_velocity = self._ik_solver.cartesian_velocity_to_joint_velocity(unscaled_action, robot_state=robot_state)
 
                 joint_delta = self._ik_solver.joint_velocity_to_delta(joint_velocity)
                 desired_joint_action = joint_delta + self.robot.get_joint_positions().numpy()
@@ -248,8 +250,10 @@ class FrankaArm(Arm):
     def get_obs(self):
         obs = {}
         joint_positions = self.robot.get_joint_positions()
+        joint_velocities = self.robot.get_joint_velocities()
         eef_position, eef_orientation = self.robot.get_ee_pose()
         obs["q_pos"] = joint_positions.numpy()
+        obs["q_vel"] = joint_velocities.numpy()
         obs["eef_pos"] = eef_position.numpy()
         obs["eef_rot"] = eef_orientation.numpy()
         return obs

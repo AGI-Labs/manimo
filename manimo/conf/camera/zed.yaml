@@ -5,7 +5,7 @@ cam0:
     img_height: 720
     hz: 30
     name: "cam0"
-    device_id: "15034562"
+    device_id: "25861225"
     buffer_size: 1
     window_dur: null
     warm_start:

@@ -57,9 +57,19 @@ def main():
 
     obs, info = env.reset()
 
-    step = 0
+    # fetch step from final demo value in demos/demo_x.h5
+    demo_files = [f for f in os.listdir("./demos") if f.endswith('.h5')]
+    demo_files.sort()
+
+    # take step from last demo file
+    if len(demo_files):
+        demo_file = demo_files[-1]
+        step = int(demo_file.split('.')[0].split('_')[1])
+    else:
+        step = -1
+    step += 1
     while True:
-        fname = f"{name}_{step}.h5"
+        fname = f"{name}_{step:04d}.h5"
         save_path = os.path.join(args.path, fname)
         logger = DataLogger(save_path, save_images=True)
 
@@ -69,9 +79,6 @@ def main():
             # user_in = input("Ready. Recording {}".format(save_path))
 
         buttons = {}
-        num_obs = 0
-
-
         # handle button state logic
         log_state: ButtonState = ButtonState.OFF
         apply_rot_state: ButtonState = ButtonState.OFF
@@ -81,8 +88,7 @@ def main():
         log_toggle = False
         rotation_toggle = False
         apply_rot_mask = False
-
-        print(f"ready to collect demos!")
+        print(f"ready to collect demos with name: {fname}!")
         while True:
         # for _ in range(int(TIME * HZ) - 1):
             arm_action, gripper_action, buttons = agent.get_action(
@@ -112,9 +118,13 @@ def main():
                     log_state = ButtonState.OFF
 
                     if not logging:
-                        print(f"logger closed")
+                        effective_hz = num_obs / (time.time() - start)
                         logger.finish()
+                        print(f"logger closed, with framerate: {effective_hz}")
                         break
+                    else:
+                        print(f"logger started!")
+                        num_obs, start = 0, time.time()
 
             if arm_action is not None:
                 zero_actions = np.zeros_like(arm_action[:3])
@@ -135,7 +145,6 @@ def main():
 
             if logging and action is not None:
                 # print(f"action: {action}")
-                print(f"logging obs")
                 logger.log(obs)
                 num_obs += 1
 
@@ -151,12 +160,11 @@ def main():
             #     break
                 # log_state = ButtonState.OFF
 
-
-        
-        env.reset()
-        env.close()
-
-        break
+        step += 1
+    env.reset()
+    env.close()
+    
+        # break
 
 if __name__ == "__main__":
     print(f"main function called")
