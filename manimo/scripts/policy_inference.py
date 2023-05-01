@@ -12,21 +12,27 @@ def quat_to_euler(quat, degrees=False):
 
 class AIAgent:
     def __init__(self, base_path):
-        agent_config = yaml.safe_load(open(Path(base_path, 'agent_config.yaml'), 'r'))
+        with open(Path(base_path, 'agent_config.yaml'), 'r') as f:
+            config_yaml = f.read()
+            agent_config = yaml.safe_load(config_yaml)
+        print('Constructing agent...')
+        print(config_yaml)
+
         agent = hydra.utils.instantiate(agent_config)
-        agent.load_state_dict(torch.load(Path(base_path, 'pick_nsh_initsweep.ckpt'), map_location='cpu')['model'])
+        agent.load_state_dict(torch.load(Path(base_path, 'r3m_stacking.ckpt'), map_location='cpu')['model'])
         self.agent = agent.eval().cuda()
         self.transform = get_transform_by_name('preproc')
 
     def get_action(self, raw_imgs, raw_obs):
         obs = torch.from_numpy(raw_obs).float()[None].cuda()
-        img = self.transform(torch.from_numpy(raw_imgs).float() / 255)[None].cuda()
+        img = self.transform(torch.from_numpy(raw_imgs).float().permute((0, 3, 1, 2)) / 255)[None].cuda()
         with torch.no_grad():
-            acs = self.agent.get_actions(img, obs)
+            acs = self.agent.eval().get_actions(img, obs)
         return acs.cpu().numpy()[0]
-    
-def get_raw_imgs_and_obs(env_obs, IMG_SIZE=512):
-    cam_keys = ['cam0_left', 'cam1_left']
+
+
+def get_raw_imgs_and_obs(env_obs, IMG_SIZE=256):
+    cam_keys = ['cam1_left']
     obs_keys = ['eef_pos', 'eef_rot', 'eef_gripper_width']
 
     imgs = [env_obs[cam_key][0] for cam_key in cam_keys]
@@ -41,28 +47,14 @@ def get_raw_imgs_and_obs(env_obs, IMG_SIZE=512):
             else:
                 raw_obs.extend(env_obs[obs_key])
     
-    resized_imgs = [cv2.resize(img, (IMG_SIZE, IMG_SIZE)) for img in imgs]
+    resized_imgs = [cv2.resize(img, (IMG_SIZE, IMG_SIZE), interpolation=cv2.INTER_AREA) for img in imgs]
+    cv2.imshow('test', resized_imgs[-1][:,:,::-1]); cv2.waitKey(1)
+    resized_imgs = np.array(resized_imgs, dtype=np.uint8)
 
-    # change dimension to 3, IMG_SIZE, IMG_SIZE
-    imgs = [np.transpose(img, (2, 0, 1)) for img in resized_imgs]
-    raw_imgs = np.stack(imgs, axis=0)
-
-
-    return raw_imgs, np.array(raw_obs)
+    return resized_imgs, np.array(raw_obs)
 
 def main():
-    model_idx = 8
-    base_path = f'/home/sudeep/Downloads/pick_nsh_initsweep/run{model_idx}_franka_r3m/'
-    
-    NUM_IMGS = 2
-    IMG_SIZE = 512
-    ACTION_DIM = 7
-
-    cam_keys = ['cam0_left', 'cam1_left']
-    obs_keys = ['eef_pos', 'eef_rot', 'eef_gripper_width']
-
-    # raw_imgs = np.zeros((NUM_IMGS, 3, IMG_SIZE, IMG_SIZE), dtype=np.uint8)
-    # raw_obs = np.zeros((ACTION_DIM,)) # get from obs dict
+    base_path = '/home/sudeep/Downloads/r3m_stacking/run5_franka_r3m/'
 
     agent = AIAgent(base_path)
 
@@ -77,12 +69,15 @@ def main():
 
     env = SingleArmEnv(sensors_cfg, actuators_cfg, env_cfg)
 
-
-    obs, info = env.reset()
-    raw_imgs, raw_obs = get_raw_imgs_and_obs(obs)
-
-    MAX_STEPS = 300
+    MAX_STEPS = 500
     while True:
+        obs, info = env.reset()
+        raw_imgs, raw_obs = get_raw_imgs_and_obs(obs)
+
+        # wait for enter key to continue
+        print('Press enter to continue')
+        input()
+
         step = 0
 
         while step < MAX_STEPS:
@@ -94,7 +89,7 @@ def main():
                 acs = [acs]
             for ac in acs:
                 arm_action = ac[:6]
-                gripper_action = ac[6]
+                gripper_action = float(ac[6] > 0.8)
                 obs, info, _, _ = env.step([arm_action, gripper_action])
                 print(f"Step: {step}, Action: {ac}")
                 raw_imgs, raw_obs = get_raw_imgs_and_obs(obs)
@@ -103,10 +98,6 @@ def main():
                     break
         print(f"done, reseting env")
         env.reset()
-
-        # wait for enter key to continue
-        input("Press Enter to continue...")
-        print("Continuing...")
 
 if __name__ == '__main__':
     main()

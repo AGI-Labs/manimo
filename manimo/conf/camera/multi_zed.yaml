@@ -6,6 +6,9 @@ cam0:
     hz: 30
     name: "cam0"
     device_id: "15034562"
+    hcrop: 0
+    vcrop: 0
+    display: True
     buffer_size: 1
     window_dur: null  # number of seconds to track in buffer
     warm_start:
@@ -20,6 +23,9 @@ cam1:
     hz: 30
     name: "cam1"
     device_id: "25861225"
+    hcrop: 0
+    vcrop: 0
+    display: True
     buffer_size: 1
     window_dur: null  # number of seconds to track in buffer
     warm_start:

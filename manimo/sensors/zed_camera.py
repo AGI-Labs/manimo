@@ -12,6 +12,8 @@ from omegaconf import DictConfig
 import pyzed.sl as sl
 from manimo.sensors import Sensor
 
+
+
 def add_image(camera_cfg, rgb_frame_queue: Queue, closed: bool):
 
     cam = sl.Camera(camera_cfg.device_id)
@@ -38,8 +40,11 @@ def add_image(camera_cfg, rgb_frame_queue: Queue, closed: bool):
                 cam.retrieve_image(image_right, sl.VIEW.RIGHT)
                 color_timestamp = cam.get_timestamp(sl.TIME_REFERENCE.IMAGE).data_ns
 
-                color_images = np.array([image_left.get_data()[:,:,:3][:,:,::-1], 
-                                            image_right.get_data()[:,:,:3][:,:,::-1]], dtype=np.uint8)
+                #TODO: crop and visualize the images
+                cropped_left_image = image_left.get_data()[camera_cfg.vcrop:,camera_cfg.hcrop:,:3][:,:,::-1]
+                cropped_right_image = image_right.get_data()[camera_cfg.vcrop:,camera_cfg.hcrop:,:3][:,:,::-1]
+                color_images = np.array([cropped_left_image, 
+                                            cropped_right_image], dtype=np.uint8)
             else:
                 # raise exception
                 raise Exception(f"grabbing image failed with error code: {err}")
@@ -116,6 +121,10 @@ class ZedCam(Sensor):
                 left_im, right_im, ts = self.rgb_frame_queue.get() 
                 obs[f"{name}_left"] = (left_im, ts)
                 obs[f"{name}_right"] = (right_im, ts)
+
+                if self.cam_cfg.display:
+                    pass
+                    # cv2.imshow(f"{name}_left", left_im[:,:,::-1]); cv2.waitKey(1)
             else:
                 while not self.rgb_frame_queue.empty():
                     self.window.append(self.rgb_frame_queue.get())

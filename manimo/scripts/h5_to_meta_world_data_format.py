@@ -1,4 +1,4 @@
-import argparse
+import argparse, cv2
 import h5py
 import numpy as np
 import imageio.v3 as  iio
@@ -55,7 +55,7 @@ for traj_id, replay_file in enumerate(tqdm(all_replay_files)):
                 if key == "eef_gripper_width":
                     # apply np.expand_dims to f[key][:], along axis=1
                     # normalize values to [-0.5, 0.5]
-                    values = np.expand_dims(f[key][:], axis=1)
+                    values = np.expand_dims(values, axis=1)
 
                 if traj_data[obs_key] is None:
                     traj_data[obs_key] = values
@@ -73,32 +73,34 @@ for traj_id, replay_file in enumerate(tqdm(all_replay_files)):
                 if key == "eef_gripper_action":
                     # apply np.expand_dims to f[key][:], along axis=1
                     # normalize values to [-0.5, 0.5]
-                    values = np.expand_dims(f[key][:], axis=1)
+                    # threshold values array to be either 0 or 1
+                    values = values > 0.05
+                    values = np.expand_dims(values, axis=1)
 
                 if traj_data[action_key] is None:
                     traj_data[action_key] = values
                 else:
                     traj_data[action_key] = np.append(traj_data[action_key], values, axis=1)
                     
-
             videos = f["videos"]
             traj_len = traj_data[action_key].shape[0]
             traj_data[img_key] = np.zeros((traj_len, len(videos), args.size, args.size, 3), dtype=np.uint8)
 
             for video_idx, video in enumerate(videos):
-                data = videos[video][()].tostring()
+                data = videos[video][()].tobytes()
                 # Free up memory by deleting unused variables
                 # del videos[video]
 
-                images = imageio.read(data, format="mp4", size=(args.size, args.size), fps=hz)
+                images = imageio.read(data, format="mp4", fps=hz)
 
                 # convert mp4 binary to jpeg images
                 # correct size is 256x256
 
                 # save images to traj_data[img_key][video]
                 for i, image in enumerate(images):
+                    image = cv2.resize(image, (args.size, args.size), interpolation=cv2.INTER_AREA)
                     traj_data[img_key][i][video_idx] = image
-            traj_data['images'] = traj_data['images'][:, [0, 2]]
+            traj_data['images'] = traj_data['images'][:, [0]]
             all_traj_data.append(traj_data)
             gc.collect()
 
@@ -111,7 +113,7 @@ for traj_id, replay_file in enumerate(tqdm(all_replay_files)):
 #     new_f.create_dataset('pick_nsh_220_demos', data=all_traj_data)
 
 try:
-    with open(str(replay_folder) + '/pick_nsh_220_demos.pkl', 'wb') as new_f:
+    with open(str(replay_folder) + '/stack_nsh_demos_apr28.pkl', 'wb') as new_f:
         cloudpickle.dump(all_traj_data, new_f)
 
 except Exception as e:
