@@ -103,16 +103,6 @@ def main():
                 if log_toggle:
                     log_state = ButtonState.INPROGRESS
 
-                # if rotation_toggle and apply_rot_state == ButtonState.OFF:
-                #     apply_rot_mask = True
-                #     apply_rot_state = ButtonState.INPROGRESS
-                #     print('applying rot_mask')
-
-                # if rotation_toggle and apply_rot_state == ButtonState.ON:
-                #     apply_rot_mask = False
-                #     apply_rot_state = ButtonState.INPROGRESS
-                #     print('disabling rot_mask')
-
                 if not log_toggle and log_state == ButtonState.INPROGRESS:
                     logging = not logging
                     log_state = ButtonState.OFF
@@ -131,8 +121,6 @@ def main():
                 if apply_rot_mask:
                     arm_action[:3] = zero_actions
                     apply_rot_state = ButtonState.ON
-                # else:
-                #     apply_rot_state = ButtonState.OFF
 
                 if args.gripper_en:
                     action = [arm_action, not gripper_action]
@@ -144,21 +132,9 @@ def main():
             obs = env.step(action)[0]
 
             if logging and action is not None:
-                # print(f"action: {action}")
                 logger.log(obs)
                 num_obs += 1
 
-
-            # if not log_toggle and log_state == ButtonState.INPROGRESS:
-            #     if logging:
-            #         log_state = ButtonState.ON
-            #         print(f"logger started!")
-            #     else:
-            #         log_state = ButtonState.OFF
-            #         logger.finish()
-            #         print(f"logger closed!")
-            #     break
-                # log_state = ButtonState.OFF
 
         step += 1
     env.reset()
