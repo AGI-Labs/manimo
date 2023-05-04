@@ -37,7 +37,7 @@ class StateManager:
         """
         self.button_states = {}
 
-    def handle_state(self, buttons, button_key, function):
+    def handle_state(self, buttons, button_key, callback, *args):
         """
         Handles the state of a button and calls the provided function when the button state changes.
 
@@ -46,19 +46,22 @@ class StateManager:
             button_key (str): The key representing the button in the 'buttons' dictionary.
             function (callable): The function to be called when the button state changes.
         """
-        # Initialize the button state if not present in the button_states dictionary
-        if button_key not in self.button_states:
-            self.button_states[button_key] = ButtonState.OFF
+        if buttons:
+            # Initialize the button state if not present in the button_states dictionary
+            if button_key not in self.button_states:
+                self.button_states[button_key] = ButtonState.OFF
 
-        # Check the current state of the button
-        button_toggle = buttons[button_key]
+            # Check the current state of the button
+            button_toggle = buttons[button_key]
 
-        # If the button is pressed, set the state to INPROGRESS
-        if button_toggle:
-            self.button_states[button_key] = ButtonState.INPROGRESS
+            # If the button is pressed, set the state to INPROGRESS
+            if button_toggle:
+                self.button_states[button_key] = ButtonState.INPROGRESS
 
-        # If the button is released and the previous state was INPROGRESS, call the provided function
-        # and set the state back to OFF
-        elif not button_toggle and self.button_states[button_key] == ButtonState.INPROGRESS:
-            function()
-            self.button_states[button_key] = ButtonState.OFF
+            # If the button is released and the previous state was INPROGRESS, call the provided function
+            # and set the state back to OFF
+            elif not button_toggle and self.button_states[button_key] == ButtonState.INPROGRESS:
+                self.button_states[button_key] = ButtonState.OFF
+                return callback(*args)
+
+        return None

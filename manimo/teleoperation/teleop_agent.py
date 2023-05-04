@@ -80,7 +80,7 @@ class TeleopAgent(Agent):
         
         return lin_vel, rot_vel
 
-    def get_action(self, obs: ObsDict, apply_pos_mask: bool = True) -> Optional[np.ndarray]:
+    def get_action(self, obs: ObsDict) -> Optional[np.ndarray]:
         """
         Get the action from the agent
 
