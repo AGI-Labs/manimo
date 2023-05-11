@@ -30,6 +30,7 @@ pip install dm-robotics-agentflow==0.5.0 --no-deps
 pip install dm-robotics-geometry==0.5.0 --no-deps
 pip install dm-robotics-manipulation==0.5.0 --no-deps
 pip install dm-robotics-controllers==0.5.0 --no-deps
+pip install mujoco==2.3.2 --no-deps
 pip install protobuf==3.20.3
 pip install pyrealsense2
 pip install h5py
