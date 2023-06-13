@@ -1,22 +1,25 @@
+import time
 from collections import OrderedDict
+
 import numpy as np
 from omegaconf import DictConfig
 from reskin_sensor import ReSkinProcess
-import time
 
 from manimo.sensors.sensor import Sensor
 from manimo.utils.types import ObsDict
 
+
 class ReskinSensor(Sensor):
-    """Abstract class to read values from a sensor
-    """
+    """Abstract class to read values from a sensor"""
+
     def __init__(self, config: DictConfig):
         """
         Setup sensor with the required config and optional config
         required config:
             sampling rate: number of samples to be collected per second
             buffer_size: number of seconds of data to be retained
-                (The plan is to setup a ring buffer to retain a running collection of recent observed samples)
+                (The plan is to setup a ring buffer to retain a
+                running collection of recent observed samples)
         """
         super().__init__(config)
         self.config = config
@@ -39,7 +42,7 @@ class ReskinSensor(Sensor):
         start polling sensor data
         """
         pass
-    
+
     def close(self):
         """
         stop polling sensor data
@@ -53,7 +56,7 @@ class ReskinSensor(Sensor):
         print("baseline_len: ", len(raw_data))
         _, _, reskin_data, _ = zip(*raw_data)
         self.baseline = np.array(reskin_data)
-        
+
     def reset(self):
         # Record baseline and store in default observation
         obs = self.get_obs()

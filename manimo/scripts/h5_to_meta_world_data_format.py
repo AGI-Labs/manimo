@@ -1,20 +1,23 @@
 import argparse, cv2
-import h5py
-import numpy as np
-import imageio.v3 as  iio
-import imageio
+import gc
 from pathlib import Path
-from torchvision.transforms import ToPILImage
-from tqdm import tqdm
+
 import cloudpickle
+import h5py
+import imageio
+import imageio.v3 as iio
+import numpy as np
 
 from scipy.spatial.transform import Rotation as R
-from typing import Optional
-import gc
+from torchvision.transforms import ToPILImage
+from tqdm import tqdm
+
 
 def quat_to_euler(quat, degrees=False):
-    euler = R.from_quat(quat).as_euler('xyz', degrees=degrees)
+    euler = R.from_quat(quat).as_euler("xyz", degrees=degrees)
     return euler
+
+
 # import manimo quat_to_euler
 
 parser = argparse.ArgumentParser()
@@ -25,11 +28,11 @@ args = parser.parse_args()
 replay_file = args.replay_file
 
 hz = 30
-obs_keys = ['eef_pos', 'eef_rot', 'eef_gripper_width']
-action_keys = ['action', 'eef_gripper_action']
-img_key = 'images'
-obs_key = 'observations'
-action_key = 'actions'
+obs_keys = ["eef_pos", "eef_rot", "eef_gripper_width"]
+action_keys = ["action", "eef_gripper_action"]
+img_key = "images"
+obs_key = "observations"
+action_key = "actions"
 
 # get the replay_file folder name
 replay_folder = Path(replay_file).parent
@@ -60,14 +63,17 @@ for traj_id, replay_file in enumerate(tqdm(all_replay_files)):
                 if traj_data[obs_key] is None:
                     traj_data[obs_key] = values
                 else:
-                    if key == 'eef_rot':
+                    if key == "eef_rot":
                         # apply quat_to_euler to f[key][:], along axis=1
-                        traj_data[obs_key] = np.append(traj_data[obs_key], quat_to_euler(values), axis=1)
+                        traj_data[obs_key] = np.append(
+                            traj_data[obs_key], quat_to_euler(values), axis=1
+                        )
                     else:
-                        traj_data[obs_key] = np.append(traj_data[obs_key], values, axis=1)
+                        traj_data[obs_key] = np.append(
+                            traj_data[obs_key], values, axis=1
+                        )
 
             for key in action_keys:
-                
                 values = f[key][:]
 
                 if key == "eef_gripper_action":
@@ -80,11 +86,16 @@ for traj_id, replay_file in enumerate(tqdm(all_replay_files)):
                 if traj_data[action_key] is None:
                     traj_data[action_key] = values
                 else:
-                    traj_data[action_key] = np.append(traj_data[action_key], values, axis=1)
-                    
+                    traj_data[action_key] = np.append(
+                        traj_data[action_key], values, axis=1
+                    )
+
             videos = f["videos"]
             traj_len = traj_data[action_key].shape[0]
-            traj_data[img_key] = np.zeros((traj_len, len(videos), args.size, args.size, 3), dtype=np.uint8)
+            traj_data[img_key] = np.zeros(
+                (traj_len, len(videos), args.size, args.size, 3),
+                dtype=np.uint8,
+            )
 
             for video_idx, video in enumerate(videos):
                 data = videos[video][()].tobytes()
@@ -98,9 +109,13 @@ for traj_id, replay_file in enumerate(tqdm(all_replay_files)):
 
                 # save images to traj_data[img_key][video]
                 for i, image in enumerate(images):
-                    image = cv2.resize(image, (args.size, args.size), interpolation=cv2.INTER_AREA)
+                    image = cv2.resize(
+                        image,
+                        (args.size, args.size),
+                        interpolation=cv2.INTER_AREA,
+                    )
                     traj_data[img_key][i][video_idx] = image
-            traj_data['images'] = traj_data['images'][:, [0]]
+            traj_data["images"] = traj_data["images"][:, [0]]
             all_traj_data.append(traj_data)
             gc.collect()
 
@@ -113,7 +128,9 @@ for traj_id, replay_file in enumerate(tqdm(all_replay_files)):
 #     new_f.create_dataset('pick_nsh_220_demos', data=all_traj_data)
 
 try:
-    with open(str(replay_folder) + '/stack_nsh_demos_apr28.pkl', 'wb') as new_f:
+    with open(
+        str(replay_folder) + "/stack_nsh_demos_apr28.pkl", "wb"
+    ) as new_f:
         cloudpickle.dump(all_traj_data, new_f)
 
 except Exception as e:

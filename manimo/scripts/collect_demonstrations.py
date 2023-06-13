@@ -1,10 +1,11 @@
 import argparse
 import glob
+import os
+
 import hydra
+import numpy as np
 from manimo.environments.single_arm_env import SingleArmEnv
 from manimo.utils.helpers import HOMES
-import numpy as np
-import os
 
 
 # create a single arm environment
@@ -31,7 +32,9 @@ def main():
     home = HOMES[task]
 
     hydra.initialize(
-        version_base="1.1", config_path="../conf", job_name="collect_demos_test"
+        version_base="1.1",
+        config_path="../conf",
+        job_name="collect_demos_test",
     )
 
     actuators_cfg = hydra.compose(config_name="actuators_record")

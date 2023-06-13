@@ -1,9 +1,4 @@
 try:
     from manimo.actuators.arms.franka_arm import FrankaArm
-except ImportError as e:    
+except ImportError as e:
     print("Failed to import FrankaArm actuator, ", e)
-
-# try:
-#     from manimo.actuators.arms.moma_arm import MujocoArmModel
-# except ImportError as e:    
-#     print("Failed to import FrankaArm actuator, ", e)

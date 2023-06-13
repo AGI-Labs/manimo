@@ -2,9 +2,9 @@ import faulthandler
 
 import hydra
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation, PillowWriter
 import numpy as np
 from manimo.environments.single_arm_env import SingleArmEnv
+from matplotlib.animation import FuncAnimation, PillowWriter
 
 AUDIO_PACKET_SIZE = 64
 AUDIO_FPS = 32000
@@ -14,7 +14,10 @@ def get_sec(time_str):
     """Get Seconds from time."""
     hour, minute, second, second_decimal = time_str.split(".")
     return (
-        int(hour) * 3600 + int(minute) * 60 + int(second) + float("0." + second_decimal)
+        int(hour) * 3600
+        + int(minute) * 60
+        + int(second)
+        + float("0." + second_decimal)
     )
 
 
@@ -30,15 +33,17 @@ def main():
     faulthandler.enable()
     env = SingleArmEnv(sensors_cfg, actuators_cfg)
 
-    if not sensors_cfg['audio']['contact_mic']['contact_mic_cfg']['include_timestamp']:
+    if not sensors_cfg["audio"]["contact_mic"]["contact_mic_cfg"][
+        "include_timestamp"
+    ]:
         # TEST AUDIO OBSERVATIONS
         audio_obs = []
-        print(f'collecting audio observations')
+        print(f"collecting audio observations")
         for i in range(1000):
             obs = env.step()[0]
             audio_obs.append(obs["audio"].mean(axis=0))
         env.reset()
-        print(f'finished collecting {len(audio_obs)} audio observations')
+        print(f"finished collecting {len(audio_obs)} audio observations")
 
         def animate(i):
             plt.cla()
@@ -46,7 +51,12 @@ def main():
             audio_plot = plt.plot(audio_obs[i])
             return audio_plot
 
-        ani = FuncAnimation(plt.gcf(), animate, frames=len(audio_obs), interval=1000/AUDIO_FPS)
+        ani = FuncAnimation(
+            plt.gcf(),
+            animate,
+            frames=len(audio_obs),
+            interval=1000 / AUDIO_FPS,
+        )
         ani.save("test_audio_obs.gif", writer=PillowWriter(fps=30))
         print("saved audio.gif")
 
@@ -57,10 +67,12 @@ def main():
             obs = env.step()[0]
             audio_obs += obs["audio"]
         env.reset()
-        print(f'finished collecting {len(audio_obs)} audio observations')
+        print(f"finished collecting {len(audio_obs)} audio observations")
 
         unique_obs = {timestamp: ser_ints for ser_ints, timestamp in audio_obs}
-        all_unique_timestamps = list(set([get_sec(t) for t in unique_obs.keys()]))
+        all_unique_timestamps = list(
+            set([get_sec(t) for t in unique_obs.keys()])
+        )
         all_unique_timestamps.sort()
 
         print("num unique timestamps: ", len(all_unique_timestamps))
@@ -78,32 +90,48 @@ def main():
         # output timestamp data
         print(f"last timestamp - first timestamp: {total_time} s")
         print(
-            f"num_unique_timestamps * PACKET_SIZE / FPS: {len(all_unique_timestamps) * AUDIO_PACKET_SIZE / AUDIO_FPS} s"
+            "num_unique_timestamps * PACKET_SIZE / FPS:"
+            f" {len(all_unique_timestamps) * AUDIO_PACKET_SIZE / AUDIO_FPS} s"
         )
         print(
-            f"approx fps from timesteps: {len(all_unique_timestamps) * AUDIO_PACKET_SIZE / total_time:.0f} HZ"
+            "approx fps from timesteps:"
+            f" {(len(all_unique_timestamps) * AUDIO_PACKET_SIZE /
+                 total_time):.0f} HZ"
         )
 
         # output audio stats
-        print(f"approx fps from audio_arr: {all_audio_arr.shape[1] / total_time:.0f} HZ")
+        print(
+            "approx fps from audio_arr:"
+            f" {all_audio_arr.shape[1] / total_time:.0f} HZ"
+        )
         print("num audio blocks: ", num_audio_blocks)
         print("audio shape: ", all_audio_arr.shape)
         print("audio mean: ", all_audio_arr.mean())
         print("audio std: ", all_audio_arr.std())
 
-        shifted_timesteps = np.array(all_unique_timestamps) - all_unique_timestamps[0]
+        shifted_timesteps = (
+            np.array(all_unique_timestamps) - all_unique_timestamps[0]
+        )
         shifted_timesteps_full = []
         for i in range(shifted_timesteps.shape[0]):
-            shifted_timesteps_full += [shifted_timesteps[i]] * AUDIO_PACKET_SIZE
+            shifted_timesteps_full += [
+                shifted_timesteps[i]
+            ] * AUDIO_PACKET_SIZE
 
         # plot audio data
-        plt.plot(shifted_timesteps_full, all_audio_arr.mean(axis=0), label="mean")
+        plt.plot(
+            shifted_timesteps_full, all_audio_arr.mean(axis=0), label="mean"
+        )
         for channel in range(all_audio_arr.shape[0]):
-            plt.plot(shifted_timesteps_full, all_audio_arr[channel, :], label=f"ch {channel}")
+            plt.plot(
+                shifted_timesteps_full,
+                all_audio_arr[channel, :],
+                label=f"ch {channel}",
+            )
         plt.legend()
         plt.ylim(1900, 2300)
         plt.savefig("./test_audio_all.png")
-        print(f'saved test_audio.png')
+        print(f"saved test_audio.png")
 
 
 if __name__ == "__main__":

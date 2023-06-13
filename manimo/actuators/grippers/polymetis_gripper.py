@@ -1,8 +1,8 @@
-from gym import spaces
-from polymetis import GripperInterface
-from manimo.actuators.grippers.gripper import Gripper
 import numpy as np
+from gym import spaces
+from manimo.actuators.grippers.gripper import Gripper
 from omegaconf import DictConfig
+from polymetis import GripperInterface
 
 
 class PolymetisGripper(Gripper):
@@ -23,7 +23,10 @@ class PolymetisGripper(Gripper):
         )
         print(f"connection to gripper established!")
         self.action_space = spaces.Box(
-            0.0, self._gripper_interface.metadata.max_width, (1,), dtype=np.float32
+            0.0,
+            self._gripper_interface.metadata.max_width,
+            (1,),
+            dtype=np.float32,
         )
 
     def _open_gripper(self):
@@ -35,7 +38,9 @@ class PolymetisGripper(Gripper):
         )
 
     def _close_gripper(self):
-        self._gripper_interface.grasp(speed=self.config.speed, force=self.config.force)
+        self._gripper_interface.grasp(
+            speed=self.config.speed, force=self.config.force
+        )
 
     def step(self, action):
         obs = {}

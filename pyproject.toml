@@ -1,0 +1,4 @@
+[tool.black]
+line-length = 79
+preview = true
+experimental-string-processing = true

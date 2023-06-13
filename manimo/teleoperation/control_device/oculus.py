@@ -6,9 +6,11 @@ from torchcontrol.transform import Rotation as R
 
 from .base import TeleopDeviceReader
 
+
 def rmat_to_quat(rot_mat, degrees=False):
     quat = R.from_matrix(torch.Tensor(rot_mat)).as_quat()
     return quat
+
 
 def vec_to_reorder_mat(vec):
     X = np.zeros((len(vec), len(vec)))
@@ -16,6 +18,7 @@ def vec_to_reorder_mat(vec):
         ind = int(abs(vec[i])) - 1
         X[i, ind] = np.sign(vec[i])
     return X
+
 
 def get_button_labels(controller_id: str) -> dict:
     if controller_id == "r":
@@ -29,17 +32,19 @@ def get_button_labels(controller_id: str) -> dict:
             "grasp_en": "LTr",
         }
 
+
 class OculusQuestReader(TeleopDeviceReader):
     """Allows for teleoperation using an Oculus controller
-    Using the right controller, fully press the grip button (middle finger) to engage teleoperation. Hold B to perform grasp.
+    Using the right controller, fully press the grip button (middle finger)
+    to engage teleoperation. Hold B to perform grasp.
     """
 
-    def __init__(self, 
-                ip_address,
-                lpf_cutoff_hz,
-                control_hz,
-                controller_id):
-        self.reader = OculusReader(ip_address=ip_address) if ip_address is not None else OculusReader()
+    def __init__(self, ip_address, lpf_cutoff_hz, control_hz, controller_id):
+        self.reader = (
+            OculusReader(ip_address=ip_address)
+            if ip_address is not None
+            else OculusReader()
+        )
         self.reader.run()
         self.controller_id = controller_id
         # LPF filter
@@ -64,13 +69,17 @@ class OculusQuestReader(TeleopDeviceReader):
             # else:
             #     print(f"grasp not enabled")
             if self.reset_orientation and control_en:
-                self.vr_to_global_mat = np.linalg.inv(np.asarray(transforms[self.controller_id]))
+                self.vr_to_global_mat = np.linalg.inv(
+                    np.asarray(transforms[self.controller_id])
+                )
                 self.reset_orientation = False
 
             if not control_en:
                 self.reset_orientation = True
 
-            diff_matrix = self.vr_to_global_mat @ np.asarray(transforms[self.controller_id])
+            diff_matrix = self.vr_to_global_mat @ np.asarray(
+                transforms[self.controller_id]
+            )
             # print(f"diff_matrix: {diff_matrix[:3, 3]}")
             pose_matrix = self.global_to_env_mat @ diff_matrix
         else:
