@@ -1,6 +1,6 @@
 import argparse
+
 import h5py
-import numpy as np
 import hydra
 
 from manimo.environments.single_arm_env import SingleArmEnv
@@ -24,13 +24,11 @@ gripper_width = f["eef_gripper_width"][:]
 
 # get start position
 demo_start_pos = ee_joint_action[0]
-print(f'num_obs: {ee_pos_desired.shape[0]}')
-print(f'start_pos: {demo_start_pos}')
+print(f"num_obs: {ee_pos_desired.shape[0]}")
+print(f"start_pos: {demo_start_pos}")
 
 # initialize agent
-hydra.initialize(
-        config_path="../conf", job_name="collect_demos_test"
-    )
+hydra.initialize(config_path="../conf", job_name="collect_demos_test")
 
 actuators_cfg = hydra.compose(config_name="actuators_playback")
 sensors_cfg = hydra.compose(config_name="sensors")
@@ -39,7 +37,7 @@ env_cfg = hydra.compose(config_name="env")
 env = SingleArmEnv(sensors_cfg, actuators_cfg, env_cfg=env_cfg)
 hydra.core.global_hydra.GlobalHydra.instance().clear()
 
-print(f'Setting home to demo start pos: {demo_start_pos}')
+print(f"Setting home to demo start pos: {demo_start_pos}")
 env.set_home(demo_start_pos)
 env.reset()
 

@@ -1,11 +1,14 @@
-"""An abstract interface for a sensor that allows to users to read values from sensor
+"""An abstract interface for a sensor 
+that allows to users to read values from sensor
 """
 from abc import ABC, abstractmethod
+
 from manimo.utils.types import ObsDict
 
+
 class Sensor(ABC):
-    """Abstract class to read values from a sensor
-    """
+    """Abstract class to read values from a sensor"""
+
     @abstractmethod
     def __init__(self, config):
         """
@@ -13,9 +16,8 @@ class Sensor(ABC):
         required config:
             sampling rate: number of samples to be collected per second
             buffer_size: number of seconds of data to be retained
-                (The plan is to setup a ring buffer to retain a running collection of recent observed samples)
         """
-        #setup sensor with required config
+        # setup sensor with required config
         pass
 
     @abstractmethod
@@ -23,7 +25,7 @@ class Sensor(ABC):
         """
         start polling sensor data
         """
-    
+
     @abstractmethod
     def close(self):
         """

@@ -1,19 +1,19 @@
-from argparse import Action
-import grpc
-import hydra
-from manimo.actuators.arms.arm import Arm
-# from manimo.actuators.arms.moma_arm import MujocoArmModel
-from manimo.actuators.controllers import CartesianPDPolicy, JointPDPolicy
-from manimo.utils.helpers import Rate
-from manimo.utils.types import ActionSpace, IKMode
-from manimo.teleoperation.teleop_agent import quat_add
-from manimo.actuators.arms.robot_ik.robot_ik_solver import RobotIKSolver
-import numpy as np
-from omegaconf import DictConfig
-from polymetis import RobotInterface
 import time
+
+import grpc
+import numpy as np
 import torch
 import torchcontrol as toco
+from manimo.actuators.arms.arm import Arm
+from manimo.actuators.arms.robot_ik.robot_ik_solver import RobotIKSolver
+
+# from manimo.actuators.arms.moma_arm import MujocoArmModel
+from manimo.actuators.controllers import CartesianPDPolicy, JointPDPolicy
+from manimo.teleoperation.teleop_agent import quat_add
+from manimo.utils.helpers import Rate
+from manimo.utils.types import ActionSpace, IKMode
+from omegaconf import DictConfig
+from polymetis import RobotInterface
 from scipy.spatial.transform import Rotation as R
 
 
@@ -21,12 +21,14 @@ class CustomRobotInterace(RobotInterface):
     def get_ee_pose(self):
         eef_position, eef_orientation = super().get_ee_pose()
         r = toco.transform.Rotation.from_quat(eef_orientation)
-        pos_offset = r.apply(torch.Tensor([0, 0, 0.145]))  # site offset for robotiq pinch
+        pos_offset = r.apply(
+            torch.Tensor([0, 0, 0.145])
+        )  # site offset for robotiq pinch
         return eef_position + pos_offset, eef_orientation
 
 
 def quat_to_euler(quat, degrees=False):
-    euler = R.from_quat(quat).as_euler('xyz', degrees=degrees)
+    euler = R.from_quat(quat).as_euler("xyz", degrees=degrees)
     return euler
 
 
@@ -39,11 +41,17 @@ class FrankaArm(Arm):
         self.ik_mode = IKMode(arm_cfg.ik_mode)
         self.JOINT_LIMIT_MIN = arm_cfg.joint_limit_min
         self.JOINT_LIMIT_MAX = arm_cfg.joint_limit_max
-        self.robot = CustomRobotInterace(ip_address=self.config.robot_ip, enforce_version=False)
+        self.robot = CustomRobotInterace(
+            ip_address=self.config.robot_ip, enforce_version=False
+        )
         self.robot.hz = self.hz
         self.kq = arm_cfg.kq
         self.kqd = arm_cfg.kqd
-        self.home = arm_cfg.home if arm_cfg.home is not None else self.robot.get_joint_positions()
+        self.home = (
+            arm_cfg.home
+            if arm_cfg.home is not None
+            else self.robot.get_joint_positions()
+        )
         self._ik_solver = RobotIKSolver()
         self.reset()
 
@@ -60,24 +68,37 @@ class FrankaArm(Arm):
     def get_robot_state(self):
         robot_state = self.robot.get_robot_state()
         gripper_position = 0
-        pos, quat = self.robot.robot_model.forward_kinematics(torch.Tensor(robot_state.joint_positions))
-        cartesian_position = pos.tolist() + quat_to_euler(quat.numpy()).tolist()
+        pos, quat = self.robot.robot_model.forward_kinematics(
+            torch.Tensor(robot_state.joint_positions)
+        )
+        cartesian_position = (
+            pos.tolist() + quat_to_euler(quat.numpy()).tolist()
+        )
 
         state_dict = {
-                'cartesian_position': cartesian_position,
-                'gripper_position': gripper_position,
-                'joint_positions': list(robot_state.joint_positions),
-                'joint_velocities': list(robot_state.joint_velocities),
-                'joint_torques_computed': list(robot_state.joint_torques_computed),
-                'prev_joint_torques_computed': list(robot_state.prev_joint_torques_computed),
-                'prev_joint_torques_computed_safened': list(robot_state.prev_joint_torques_computed_safened),
-                'motor_torques_measured': list(robot_state.motor_torques_measured),
-                'prev_controller_latency_ms': robot_state.prev_controller_latency_ms,
-                'prev_command_successful': robot_state.prev_command_successful}
+            "cartesian_position": cartesian_position,
+            "gripper_position": gripper_position,
+            "joint_positions": list(robot_state.joint_positions),
+            "joint_velocities": list(robot_state.joint_velocities),
+            "joint_torques_computed": list(robot_state.joint_torques_computed),
+            "prev_joint_torques_computed": list(
+                robot_state.prev_joint_torques_computed
+            ),
+            "prev_joint_torques_computed_safened": list(
+                robot_state.prev_joint_torques_computed_safened
+            ),
+            "motor_torques_measured": list(robot_state.motor_torques_measured),
+            "prev_controller_latency_ms": (
+                robot_state.prev_controller_latency_ms
+            ),
+            "prev_command_successful": robot_state.prev_command_successful,
+        }
 
-        timestamp_dict = {'robot_timestamp_seconds': robot_state.timestamp.seconds,
-                          'robot_timestamp_nanos': robot_state.timestamp.nanos}
-       
+        timestamp_dict = {
+            "robot_timestamp_seconds": robot_state.timestamp.seconds,
+            "robot_timestamp_nanos": robot_state.timestamp.nanos,
+        }
+
         return state_dict, timestamp_dict
 
     def reset(self):
@@ -188,7 +209,11 @@ class FrankaArm(Arm):
         update_success = True
         try:
             joint_pos_desired = torch.tensor(
-                np.clip(joint_pos_desired, self.JOINT_LIMIT_MIN, self.JOINT_LIMIT_MAX)
+                np.clip(
+                    joint_pos_desired,
+                    self.JOINT_LIMIT_MIN,
+                    self.JOINT_LIMIT_MAX,
+                )
             )
             self.robot.update_current_policy(
                 {"joint_pos_desired": joint_pos_desired.float()}
@@ -201,8 +226,7 @@ class FrankaArm(Arm):
         return update_success
 
     def step(self, action):
-        action_obs = {"delta": self.delta, 'action': action.copy()
-                      }
+        action_obs = {"delta": self.delta, "action": action.copy()}
 
         # import pdb; pdb.set_trace()
         if self.action_space == ActionSpace.Cartesian:
@@ -212,17 +236,28 @@ class FrankaArm(Arm):
             elif self.ik_mode == IKMode.DMControl:
                 ee_pos_current, ee_quat_current = self.robot.get_ee_pose()
                 cur_joint_positions = self.robot.get_joint_positions().numpy()
-                unscaled_action = action/10
-                ee_pos_desired, ee_quat_desired = self._get_desired_pos_quat(unscaled_action)
+                unscaled_action = action / 10
+                ee_pos_desired, ee_quat_desired = self._get_desired_pos_quat(
+                    unscaled_action
+                )
 
                 robot_state = self.get_robot_state()[0]
-                joint_velocity = self._ik_solver.cartesian_velocity_to_joint_velocity(unscaled_action, robot_state=robot_state)
+                joint_velocity = (
+                    self._ik_solver.cartesian_velocity_to_joint_velocity(
+                        unscaled_action, robot_state=robot_state
+                    )
+                )
 
-                joint_delta = self._ik_solver.joint_velocity_to_delta(joint_velocity)
-                desired_joint_action = joint_delta + self.robot.get_joint_positions().numpy()
+                joint_delta = self._ik_solver.joint_velocity_to_delta(
+                    joint_velocity
+                )
+                desired_joint_action = (
+                    joint_delta + self.robot.get_joint_positions().numpy()
+                )
 
-                # desired_joint_action, _ = self.mujoco_model.local_inverse_kinematics(ee_pos_desired, ee_quat_desired, ee_pos_current, ee_quat_current, cur_joint_positions)
-                command_status = self._apply_joint_commands(desired_joint_action)
+                command_status = self._apply_joint_commands(
+                    desired_joint_action
+                )
 
             action_obs["joint_action"] = desired_joint_action
             action_obs["ee_pos_action"] = ee_pos_desired.numpy()
@@ -231,18 +266,20 @@ class FrankaArm(Arm):
         elif self.action_space == ActionSpace.Joint:
             command_status = self._apply_joint_commands(action)
             action_obs["joint_action"] = action
-            ee_pos_desired, ee_quat_desired = self.robot.robot_model.forward_kinematics(
-                torch.tensor(action)
-            )
+            (
+                ee_pos_desired,
+                ee_quat_desired,
+            ) = self.robot.robot_model.forward_kinematics(torch.tensor(action))
             action_obs["ee_pos_action"] = ee_pos_desired.numpy()
             action_obs["ee_quat_action"] = ee_quat_desired.numpy()
 
         elif self.action_space == ActionSpace.JointOnly:
             command_status = self._apply_joint_commands(action)
             action_obs["joint_action"] = action
-            ee_pos_desired, ee_quat_desired = self.robot.robot_model.forward_kinematics(
-                action
-            )
+            (
+                ee_pos_desired,
+                ee_quat_desired,
+            ) = self.robot.robot_model.forward_kinematics(action)
             action_obs["ee_pos_action"] = ee_pos_desired.numpy()
             action_obs["ee_quat_action"] = ee_quat_desired.numpy()
         return action_obs

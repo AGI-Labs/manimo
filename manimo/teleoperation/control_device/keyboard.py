@@ -6,9 +6,11 @@ from .base import TeleopDeviceReader
 
 # TODO: Add support for rotation
 
+
 class KeyboardReader(TeleopDeviceReader):
     """Allows for teleoperation using the keyboard
-    Control end-effector position with WASD and RF, toggle gripper state with space
+    Control end-effector position with WASD and RF,
+    toggle gripper state with space
     """
 
     def __init__(self):
@@ -55,7 +57,6 @@ class KeyboardReader(TeleopDeviceReader):
         is_active = True
 
         pose_matrix = np.eye(4)
-        #pose_matrix[:3, :3] = sp.SO3.exp(self.delta_rot).matrix() @ pose_matrix[:3, :3]
         pose_matrix[:3, -1] = self.delta_pos
         pose = pose_matrix
 

@@ -1,12 +1,12 @@
 import argparse
 import glob
 import os
+from pathlib import Path
+
 import hydra
 import numpy as np
-from manimo.environments.single_arm_env import SingleArmEnv
-from manimo.utils.helpers import HOMES
-from pathlib import Path
 import torch
+from manimo.environments.single_arm_env import SingleArmEnv
 
 
 def _separate_filename(filename):
@@ -37,7 +37,7 @@ def main():
     name, i = _separate_filename(demo_path.stem)
     num_files = len(glob.glob(f"{demo_path.parents[0]}/{name}_*.npz"))
     data = np.load(args.file)
-    home, eef_positions, eef_orientations, hz = (
+    home, _, _, hz = (
         data["home"],
         data["eef_pos"],
         data["eef_rot"],
@@ -51,15 +51,15 @@ def main():
 
     env = SingleArmEnv(sensors_cfg, actuators_cfg, hz)
 
-    for i in range(i, num_files):
-        data = np.load("data/{}_{}.npz".format(name, i))
+    for idx in range(i, num_files):
+        data = np.load("data/{}_{}.npz".format(name, idx))
 
         user_in = "r"
         while user_in == "r":
             obs = [env.reset()[0]]
             user_in = input("Ready. Loaded {} ({} hz):".format(name, hz))
         actions = []
-        home, eef_positions, eef_orientations, hz = (
+        home, _, _, hz = (
             data["home"],
             data["eef_pos"],
             data["eef_rot"],
@@ -68,7 +68,6 @@ def main():
         joint_traj = data["joint_pos"]
         # Execute trajectory
         for joints in joint_traj:
-            # action = torch.Tensor(np.append(eef_positions[j], eef_orientations[j]))
             with torch.no_grad():
                 action = torch.Tensor(joints)
                 actions.append(action.numpy())
@@ -77,10 +76,10 @@ def main():
 
         out_dict = _format_out_dict(obs, np.array(actions), hz, home)
         try:
-            np.savez("playbacks/{}_{}.npz".format(name, i), **out_dict)
+            np.savez("playbacks/{}_{}.npz".format(name, idx), **out_dict)
         except FileNotFoundError:
             os.makedirs("playbacks")
-            np.savez("playbacks/{}_{}.npz".format(name, i), **out_dict)
+            np.savez("playbacks/{}_{}.npz".format(name, idx), **out_dict)
         input("Next?")
 
 
