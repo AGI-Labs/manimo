@@ -44,107 +44,90 @@ def write_dict_to_hdf5(hdf5_file, data_dict):
 
 
 class DataLogger:
-    """This class is used to log observations from the robot environment."""
+	"""This class is used to log observations from the robot environment.
+	"""
+	def __init__(self, path: str, save_images: bool = True):
+		self._path = path
+		self._save_images = save_images
+		self._hdf5_file = h5py.File(path, 'w')
+		self._data_queue_dict = defaultdict(Queue)
+		self._video_writers = {}
+		self._video_files = {}
+		self._open = True
+		
+		# Start HDF5 Writer Thread
+		hdf5_writer = lambda data: write_dict_to_hdf5(self._hdf5_file, data)
+		run_threaded_command(self._write_from_queue, args=(hdf5_writer, self._data_queue_dict['hdf5']))
+	
+	
+	def log(self, obs: dict):
+		"""Log the current observation.
+		Args:
+			obs (dict): The current observation.
+		"""
+		# obtain keys containing cam images
+		cams = {key: obs[key] for key in obs.keys() if 'cam' in key}
+		# save images
+		if self._save_images:
+			self._update_video_files(cams)
 
-    def __init__(self, path: str, save_images: bool = True):
-        self._path = path
-        self._save_images = save_images
-        self._hdf5_file = h5py.File(path, "w")
-        self._data_queue_dict = defaultdict(Queue)
-        self._video_writers = {}
-        self._video_files = {}
-        self._open = True
+		# save other sensors data
+		other_sensors = {key: obs[key] for key in obs.keys() if 'cam' not in key}
+		self._data_queue_dict['hdf5'].put(other_sensors)
 
-        # Start HDF5 Writer Thread
-        def hdf5_writer(data):
-            write_dict_to_hdf5(self._hdf5_file, data)
+	def _write_from_queue(self, writer, queue):
+		while self._open:
+			try: data = queue.get(timeout=1)
+			except Empty: continue
+			writer(data)
+			queue.task_done()
 
-        run_threaded_command(
-            self._write_from_queue,
-            args=(hdf5_writer, self._data_queue_dict["hdf5"]),
-        )
+	def _update_video_files(self, cam_obs: dict):
+		"""Update the video files with the current observation.
+		Args:
+			cam_obs (dict): The current observation.
+		"""
+		for video_id in cam_obs:
+			# Get Frame and timestamp (disgarded)
+			img, ts = cam_obs[video_id]
 
-    def log(self, obs: dict):
-        """Log the current observation.
-        Args:
-                obs (dict): The current observation.
-        """
-        # obtain keys containing cam images
-        cams = {key: obs[key] for key in obs.keys() if "cam" in key}
-        # save images
-        if self._save_images:
-            self._update_video_files(cams)
+			# Create Writer And Buffer #
+			if video_id not in self._video_writers:
+				filename = self.create_video_file(video_id, '.mp4')
+				self._video_writers[video_id] = imageio.get_writer(filename, macro_block_size=1, fps=30)
+				run_threaded_command(self._write_from_queue, args=
+						(self._video_writers[video_id].append_data, self._data_queue_dict[video_id]))
 
-        # save other sensors data
-        other_sensors = {
-            key: obs[key] for key in obs.keys() if "cam" not in key
-        }
-        self._data_queue_dict["hdf5"].put(other_sensors)
+			# Add Image To Queue #
+			self._data_queue_dict[video_id].put(img)
 
-    def _write_from_queue(self, writer, queue):
-        while self._open:
-            try:
-                data = queue.get(timeout=1)
-            except Empty:
-                continue
-            writer(data)
-            queue.task_done()
+	def create_video_file(self, video_id, suffix):
+		temp_file = tempfile.NamedTemporaryFile(suffix=suffix)
+		self._video_files[video_id] = temp_file
+		return temp_file.name
+	
+	def finish(self):
+		# Finish Remaining Jobs #
+		[queue.join() for queue in self._data_queue_dict.values()]
 
-    def _update_video_files(self, cam_obs: dict):
-        """Update the video files with the current observation.
-        Args:
-                cam_obs (dict): The current observation.
-        """
-        for video_id in cam_obs:
-            # Get Frame and timestamp (disgarded)
-            img, ts = cam_obs[video_id]
+		# Close Video Writers #
+		for video_id in self._video_writers:
+			self._video_writers[video_id].close()
 
-            # Create Writer And Buffer #
-            if video_id not in self._video_writers:
-                filename = self.create_video_file(video_id, ".mp4")
-                self._video_writers[video_id] = imageio.get_writer(
-                    filename, macro_block_size=1, fps=30
-                )
-                run_threaded_command(
-                    self._write_from_queue,
-                    args=(
-                        self._video_writers[video_id].append_data,
-                        self._data_queue_dict[video_id],
-                    ),
-                )
+		# Save Serialized Videos #
+		for video_id in self._video_files:
+			# Create Folder #
+			if 'videos' not in self._hdf5_file:
+				self._hdf5_file.create_group('videos')
 
-            # Add Image To Queue #
-            self._data_queue_dict[video_id].put(img)
+			# Get Serialized Video #
+			self._video_files[video_id].seek(0)
+			serialized_video = np.asarray(self._video_files[video_id].read())
 
-    def create_video_file(self, video_id, suffix):
-        temp_file = tempfile.NamedTemporaryFile(suffix=suffix)
-        self._video_files[video_id] = temp_file
-        return temp_file.name
+			# Save Data #
+			self._hdf5_file['videos'].create_dataset(video_id, data=serialized_video)
+			self._video_files[video_id].close()
 
-    def finish(self):
-        # Finish Remaining Jobs #
-        [queue.join() for queue in self._data_queue_dict.values()]
-
-        # Close Video Writers #
-        for video_id in self._video_writers:
-            self._video_writers[video_id].close()
-
-        # Save Serialized Videos #
-        for video_id in self._video_files:
-            # Create Folder #
-            if "videos" not in self._hdf5_file:
-                self._hdf5_file.create_group("videos")
-
-            # Get Serialized Video #
-            self._video_files[video_id].seek(0)
-            serialized_video = np.asarray(self._video_files[video_id].read())
-
-            # Save Data #
-            self._hdf5_file["videos"].create_dataset(
-                video_id, data=serialized_video
-            )
-            self._video_files[video_id].close()
-
-        # Close File #
-        self._hdf5_file.close()
-        self._open = False
+		# Close File #
+		self._hdf5_file.close()
+		self._open = False

@@ -38,6 +38,7 @@ def main():
     hydra.core.global_hydra.GlobalHydra.instance().clear()
 
     agent = TeleopAgent()
+    print(f"loaded teleop agent: {agent}")
 
     obs, info = env.reset()
 
@@ -70,7 +71,7 @@ def main():
         print(f"ready to collect demos with name: {fname}!")
         while True:
             arm_action, gripper_action, buttons = agent.get_action(
-                obs, apply_pos_mask=False
+                obs
             )
 
             if buttons:

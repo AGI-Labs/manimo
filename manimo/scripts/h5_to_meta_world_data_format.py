@@ -22,10 +22,16 @@ def quat_to_euler(quat, degrees=False):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--replay_file", type=str, required=True)
+parser.add_argument("--cam", type=str, default="ego_cam")
 parser.add_argument("--size", type=int, default=256)
+
+
 
 args = parser.parse_args()
 replay_file = args.replay_file
+
+cam_type = Camera.ego_cam if args.cam == "ego_cam" else Camera.global_cam
+cam_idx = 0 if cam_type == Camera.global_cam else 2
 
 hz = 30
 obs_keys = ["eef_pos", "eef_rot", "eef_gripper_width"]
@@ -45,12 +51,10 @@ for traj_id, replay_file in enumerate(tqdm(all_replay_files)):
     try:
         with h5py.File(replay_file, "r") as f:
             # f = h5py.File(replay_file, "r")
-
             # get the observations
             traj_data = {}
             traj_data[obs_key] = None
             traj_data[action_key] = None
-
             for key in obs_keys:
                 # extend observation key with f[key]
 
@@ -98,16 +102,19 @@ for traj_id, replay_file in enumerate(tqdm(all_replay_files)):
             )
 
             for video_idx, video in enumerate(videos):
+                # import pdb; pdb.set_trace()
                 data = videos[video][()].tobytes()
                 # Free up memory by deleting unused variables
                 # del videos[video]
 
-                images = imageio.read(data, format="mp4", fps=hz)
+                images = imageio.read(data, format="mp4")
 
                 # convert mp4 binary to jpeg images
                 # correct size is 256x256
 
                 # save images to traj_data[img_key][video]
+                # print(f"size of images: {len(images)}")
+                # import pdb; pdb.set_trace()
                 for i, image in enumerate(images):
                     image = cv2.resize(
                         image,
@@ -115,7 +122,7 @@ for traj_id, replay_file in enumerate(tqdm(all_replay_files)):
                         interpolation=cv2.INTER_AREA,
                     )
                     traj_data[img_key][i][video_idx] = image
-            traj_data["images"] = traj_data["images"][:, [0]]
+            traj_data['images'] = traj_data['images'][:, [cam_idx]]
             all_traj_data.append(traj_data)
             gc.collect()
 
@@ -127,10 +134,12 @@ for traj_id, replay_file in enumerate(tqdm(all_replay_files)):
 # with h5py.File(replay_folder / 'pick_nsh_220_demos.h5', 'w') as new_f:
 #     new_f.create_dataset('pick_nsh_220_demos', data=all_traj_data)
 
+if cam_type == Camera.ego_cam:
+    cam_name = 'ego_cam'
+elif cam_type == Camera.global_cam:
+    cam_name = 'global_cam'
 try:
-    with open(
-        str(replay_folder) + "/stack_nsh_demos_apr28.pkl", "wb"
-    ) as new_f:
+    with open(str(replay_folder) + f'/stacking_nsh_demos_june13_{cam_name}.pkl', 'wb') as new_f:
         cloudpickle.dump(all_traj_data, new_f)
 
 except Exception as e:

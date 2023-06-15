@@ -6,7 +6,7 @@ import numpy as np
 import pyzed.sl as sl
 from omegaconf import DictConfig
 
-from manimo.sensors import Sensor
+from manimo.sensors.sensor import Sensor
 from manimo.utils.helpers import Rate
 
 

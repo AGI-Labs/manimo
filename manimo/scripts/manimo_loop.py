@@ -12,6 +12,8 @@ from manimo.environments.single_arm_env import SingleArmEnv
 from manimo.teleoperation.teleop_agent import TeleopAgent
 from manimo.utils.helpers import StateManager
 from manimo.utils.logger import DataLogger
+from pytimedinput import timedKey
+
 from scipy.spatial.transform import Rotation as R
 
 
@@ -21,11 +23,11 @@ def quat_to_euler(quat, degrees=False):
 
 
 def toggle_logger(logging, logger, num_obs, start_time):
-    finish_logging = False
+    finish = False
     if logging:
         effective_hz = num_obs / (time.time() - start_time)
         logger.finish()
-        finish_logging = True
+        finish = True
         print(f"logger closed, with framerate: {effective_hz}")
     else:
         print("logger started!")
@@ -33,16 +35,15 @@ def toggle_logger(logging, logger, num_obs, start_time):
         num_obs = 0
 
     logging = not logging
-    return logging, num_obs, start_time, finish_logging
+    return logging, num_obs, start_time, finish
 
-
-def toggle_agent(use_ai_agent):
-    return not use_ai_agent
+def toggle(flag):
+    return not flag
 
 
 class AIAgent:
-    def __init__(self, agent_path):
-        with open(Path(agent_path, "agent_config.yaml"), "r") as f:
+    def __init__(self, agent_path, model_name='r3m_stacking_newdata2.ckpt'):
+        with open(Path(agent_path, 'agent_config.yaml'), 'r') as f:
             config_yaml = f.read()
             agent_config = yaml.safe_load(config_yaml)
         with open(Path(agent_path, "obs_config.yaml"), "r") as f:
@@ -50,12 +51,7 @@ class AIAgent:
             obs_config = yaml.safe_load(config_yaml)
 
         agent = hydra.utils.instantiate(agent_config)
-        agent.load_state_dict(
-            torch.load(
-                Path(agent_path, "r3m_stacking_newdata2.ckpt"),
-                map_location="cpu",
-            )["model"]
-        )
+        agent.load_state_dict(torch.load(Path(agent_path, model_name), map_location='cpu')['model'])
         self.agent = agent.eval().cuda()
         self.actions = []
 
@@ -118,19 +114,19 @@ def main():
         "--name", type=str, default="demo", help="name of the demo"
     )
     parser.add_argument("--data_path", type=str, default="./demos/")
-    parser.add_argument("--agent_paths", nargs="+", default=[])
-    parser.add_argument(
-        "--enable_teleop", type=bool, default=False, help="enable teleop"
-    )
-    parser.add_argument(
-        "--enable_dagger", type=bool, default=False, help="enable dagger"
-    )
+    parser.add_argument("--agent_paths",  nargs='+', default=[])
+    parser.add_argument("--enable_teleop", action='store_true', help="enable teleop")
+    parser.add_argument("--enable_dagger", action='store_true', help="enable dagger")
+    parser.add_argument("--save_demos", action='store_true', help="save demos")
+    parser.add_argument("--T", type=int, default=280, help="Number of timesteps to collect")
 
     args = parser.parse_args()
     name = args.name
 
-    # create a list of ai agents based on the agent paths
-    ai_agents = [AIAgent(agent_path) for agent_path in args.agent_paths]
+    print(f"using time horizon: {args.T}")
+
+    # create a list of ai agents based on the agent paths, use list comprehension
+    ai_agents = [AIAgent(Path(agent_path).parent, Path(agent_path).name) for agent_path in args.agent_paths]
 
     hydra.initialize(config_path="../conf", job_name="collect_demos")
 
@@ -162,20 +158,42 @@ def main():
     step += 1
     agent_idx = 0
     while True:
-        fname = f"{name}_{step:04d}.h5"
-        save_path = os.path.join(args.data_path, fname)
-        logger = DataLogger(save_path, save_images=True)
+        if args.save_demos:
+            fname = f"{name}_{step:04d}.h5"
+            save_path = os.path.join(args.data_path, fname)
+            logger = DataLogger(save_path, save_images=True)
+            print(f"ready to collect demos with name: {fname}!")
 
         obs, _ = env.reset()
+        # sleep for 1 seconds
+        time.sleep(1)
         buttons = {}
 
         button_state_manager = StateManager()
-        logging, finish_logging = False, False
+        logging, finish = False, False
         num_obs, start_time = 0, time.time()
-        use_ai_agent = args.enable_teleop
+        use_ai_agent = 1#not args.enable_teleop
 
-        print(f"ready to collect demos with name: {fname}!")
-        while True:
+        env_steps = 0
+
+        if args.agent_paths:
+            print(f"current agent_idx: {agent_idx} at path: {args.agent_paths[agent_idx]}")
+            print(f"press enter to use the same agent, press any other number to chose agent index from 0 to {len(ai_agents) - 1}")
+            print(f"to use agents at paths: {args.agent_paths}")
+        user_input = input()
+        if user_input != "":
+            agent_idx = int(user_input)
+            if agent_idx < 0 or agent_idx >= len(ai_agents):
+                print(f"invalid agent_idx: {agent_idx}, using agent_idx: 0")
+                agent_idx = 0
+
+        print(f"using agent_idx: {agent_idx}")
+        # wait for 3 seconds
+        # time.sleep(2)
+        # while True:
+        while env_steps < args.T:
+            # if user presses ctrl c then break
+
             if args.enable_teleop:
                 arm_action, gripper_action, buttons = teleop_agent.get_action(
                     obs
@@ -186,25 +204,40 @@ def main():
                     teleop_action = None
 
             # Handle the 'A' button state and toggle the logging state
-            result = button_state_manager.handle_state(
-                buttons,
-                "A",
-                toggle_logger,
-                logging,
-                logger,
-                num_obs,
-                start_time,
-            )
-            if result:
-                logging, num_obs, start_time, finish_logging = result
+            if args.save_demos:
+                result = button_state_manager.handle_state(
+                    buttons,
+                    'A',
+                    toggle_logger, logging, logger, num_obs, start_time
+                )
+                if result:
+                    logging, num_obs, start_time, finish = result
+            else:
+                result = button_state_manager.handle_state(
+                    buttons,
+                    'A',
+                    toggle, finish
+                )
+                if result is not None:
+                    finish = result
 
             # Handle the 'B' button state and toggle the use_ai_agent state
             if args.enable_dagger:
                 result = button_state_manager.handle_state(
-                    buttons, "B", toggle_agent, use_ai_agent
+                    buttons,
+                    'B',
+                    toggle, use_ai_agent
                 )
-            if result is not None:
-                use_ai_agent = result
+                if result is not None:
+                    use_ai_agent = result
+            else:
+                result = button_state_manager.handle_state(
+                    buttons,
+                    'B',
+                    toggle, finish
+                )
+                if result is not None:
+                    finish = result
 
             if use_ai_agent:
                 action = ai_agents[agent_idx].get_action(obs)
@@ -218,28 +251,16 @@ def main():
             if logging and action is not None:
                 logger.log(obs)
                 num_obs += 1
-
-            if finish_logging:
+            if finish:
                 # get agent_idx from user keyboard input, if the user presses enter, then use the same agent
                 # otherwise, use the next agent
-                print("finished logging, ready to start a new demo!")
-                print(f"current agent_idx: {agent_idx}")
-                print(
-                    "press enter to use the same agent, press any other"
-                    " number to chose agent index from 0 to"
-                    f" {len(ai_agents) - 1}"
-                )
-                user_input = input()
-                if user_input != "":
-                    agent_idx = int(user_input)
-                    if agent_idx < 0 or agent_idx >= len(ai_agents):
-                        print(
-                            f"invalid agent_idx: {agent_idx}, using"
-                            " agent_idx: 0"
-                        )
-                        agent_idx = 0
+                break
 
-                print(f"using agent_idx: {agent_idx}")
+            env_steps += 1
+
+            userText, timedOut = timedKey("reset if r, otherwise continue", allowCharacters="r", timeout=0.025)
+            if not timedOut:
+                print(f"pressed {userText}, resetting")
                 break
 
         step += 1

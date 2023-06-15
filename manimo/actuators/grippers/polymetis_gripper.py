@@ -63,6 +63,7 @@ class PolymetisGripper(Gripper):
         Reset the gripper to the initial state
         """
         self._open_gripper()
+        print("gripper reset")
         return self.get_obs(), {}
 
     def get_obs(self):
