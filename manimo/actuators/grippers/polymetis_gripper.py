@@ -45,8 +45,10 @@ class PolymetisGripper(Gripper):
     def step(self, action):
         obs = {}
         if action is not None:
+            gripper_close_width = max(self.action_space.high[0]*self.config.close_width_pct,
+                                       self.action_space.low[0])
             action = np.clip(
-                action, self.action_space.low[0], self.action_space.high[0]
+                action, self.action_space.high[0]*self.config.close_width_pct, self.action_space.high[0]
             )
             self._gripper_interface.goto(
                 width=action,
