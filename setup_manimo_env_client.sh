@@ -11,9 +11,6 @@ conda env create -f ./polymetis/environment.yml -n manimo
 conda activate manimo
 pip install -e ./polymetis
 
-# Build libfranka
-# ./scripts/build_libfranka.sh
-
 mkdir -p ./polymetis/build
 cd ./polymetis/build
 
