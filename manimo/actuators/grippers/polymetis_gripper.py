@@ -48,7 +48,7 @@ class PolymetisGripper(Gripper):
             gripper_close_width = max(self.action_space.high[0]*self.config.close_width_pct,
                                        self.action_space.low[0])
             action = np.clip(
-                action, self.action_space.high[0]*self.config.close_width_pct, self.action_space.high[0]
+                action, gripper_close_width, self.action_space.high[0]
             )
             self._gripper_interface.goto(
                 width=action,

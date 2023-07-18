@@ -1,6 +1,6 @@
 import argparse
 from pathlib import Path
-
+import time
 import cv2
 import hydra
 import numpy as np
@@ -11,6 +11,9 @@ from manimo.scripts.manimo_loop import ManimoLoop
 from manimo.utils.callbacks import BaseCallback
 from pytimedinput import timedKey
 from scipy.spatial.transform import Rotation as R
+from manimo.utils.new_logger import DataLogger
+from robobuf.buffers import ReplayBuffer
+torch.set_float32_matmul_precision('high')
 
 
 def quat_to_euler(quat, degrees=False):
@@ -33,7 +36,8 @@ class AIAgent:
                 "model"
             ]
         )
-        self.agent = agent.eval().cuda()
+        self.agent = torch.compile(agent.eval().cuda())
+        # self.agent = agent.eval().cuda()
         self.actions = []
 
         self.transform = hydra.utils.instantiate(obs_config["transform"])
@@ -70,9 +74,10 @@ class AIAgent:
             img = self.transform(
                 torch.from_numpy(raw_imgs).float().permute((0, 3, 1, 2)) / 255
             )[None].cuda()
+            start = time.time()
             with torch.no_grad():
                 acs = self.agent.eval().get_actions(img, obs)
-
+            print(f"get action time: {(time.time() - start)*1000} ms")
             acs = acs.cpu().numpy()[0]
 
             if len(acs.shape) == 1:
@@ -101,6 +106,7 @@ class Eval(BaseCallback):
             AIAgent(Path(agent_path).parent, Path(agent_path).name)
             for agent_path in agent_paths
         ]
+        print(f"loaded all ai agents!")
         self.agent_paths = agent_paths
         self.agent_idx = 0
 
@@ -129,18 +135,26 @@ class Eval(BaseCallback):
             self.agent_idx = agent_idx
 
     def on_end_traj(self, traj_idx):
+        print(f"finish logging")
+        # self.logger.finish()
         pass
         # return super().on_end_traj(traj_idx)
 
     def get_action(self, obs):
-        return self.ai_agents[self.agent_idx].get_action(obs)
+        action = self.ai_agents[self.agent_idx].get_action(obs)
+        new_obs = obs.copy()
+        new_obs['action'] = np.append(*action)
+        # self.logger.log(new_obs)
+        return action
 
     def on_step(self, traj_idx, step_idx):
+        start_time = time.time()
         userText, timedOut = timedKey(
             "reset if r, otherwise continue",
             allowCharacters="r",
-            timeout=0.025,
+            timeout=0.001,
         )
+        # print(f"took {time.time() - start_time} to get user input")
         if not timedOut:
             print(f"pressed {userText}, resetting")
             return True
@@ -153,7 +167,10 @@ def main():
     parser.add_argument("--agent_paths", nargs="+", default=[])
     args = parser.parse_args()
 
-    eval_callback = Eval(None, args.agent_paths)
+    replay_buffer = ReplayBuffer(max_size=1000)
+    logger = DataLogger(replay_buffer=replay_buffer, action_keys=["action"])
+
+    eval_callback = Eval(logger, args.agent_paths)
     manimo_loop = ManimoLoop(callbacks=[eval_callback])
 
     manimo_loop.run()

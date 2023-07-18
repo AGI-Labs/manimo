@@ -89,7 +89,7 @@ class SingleArmEnv(Env):
         """
         Reset the environment
         """
-        obs = dict()
+        obs = {'action': np.empty(0)}
         info = dict()
         for actuator in self.actuators:
             act_obs, act_info = actuator.reset()
