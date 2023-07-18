@@ -7,6 +7,70 @@ A modular interface for robotic manipulation:
   a. teleoperation (VR, space mouse)
   b. manual control
 
+
+Sure! Here are the instructions formatted as a single markdown block:
+
+## Prerequisites
+
+- Install `mamba`
+
+## Setup Instructions
+
+### Manimo setup
+
+1. Clone the repo from [https://github.com/AGI-Labs/manimo](https://github.com/AGI-Labs/manimo)
+2. Set `MANIMO_PATH` as an environment variable in the `.bashrc` file:
+   ```bash
+   export MANIMO_PATH={FOLDER_PATH_TO_MANIMO}/manimo/manimo
+   ```
+3. Add `MANIMO_PATH` to `PYTHONPATH` in the `.bashrc` file:
+   ```bash
+   export PYTHONPATH="${PYTHONPATH}:${MANIMO_PATH}"
+   ```
+4. Run the setup script on the client computer. Note that `mamba` setup does not work, always use `miniconda`:
+   ```bash
+   source setup_manimo_env_client.sh
+   ```
+5. Run the setup script on the server computer. Note that `mamba` setup does not work, always use `miniconda`:
+   ```bash
+   source setup_manimo_env_server.sh
+   ```
+
+To verify that the installation works, run the polymetis server on NUC by running the following script under the scripts folder:
+```bash
+python get_current_position.py
+```
+
+### Teleop VR Setup
+
+- Install `oculus_reader` VR client:
+  ```bash
+  git clone git@github.com:rail-berkeley/oculus_reader
+  cd oculus_reader
+  pip install .
+  ```
+
+- Enable developer mode on the Oculus Quest. Follow the instructions at [https://developer.oculus.com/documentation/native/android/mobile-device-setup/](https://developer.oculus.com/documentation/native/android/mobile-device-setup/).
+
+- Install Android ADB tools to communicate with the headset:
+  ```bash
+  sudo apt install android-tools-adb
+  ```
+
+- Set up Wi-Fi access to the device using the instructions provided at [https://developer.oculus.com/documentation/native/android/ts-adb/](https://developer.oculus.com/documentation/native/android/ts-adb/).
+
+FAQs:
+
+- Update the IP address in the `oculus.yaml` file.
+
+### Zed Camera SDK Install
+
+- Download the Zed SDK based on the CUDA driver version on your system from [https://www.stereolabs.com/developers/release](https://www.stereolabs.com/developers/release).
+```
+
+Please note that the above markdown block is a representation of the given instructions and assumes the instructions are correct. Make sure to double-check and verify the instructions provided in the original source.
+
+
 ## Future:
 
 1. supports on-board calbiration of different sensors.
