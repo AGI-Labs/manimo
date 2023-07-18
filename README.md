@@ -66,10 +66,6 @@ FAQs:
 ### Zed Camera SDK Install
 
 - Download the Zed SDK based on the CUDA driver version on your system from [https://www.stereolabs.com/developers/release](https://www.stereolabs.com/developers/release).
-```
-
-Please note that the above markdown block is a representation of the given instructions and assumes the instructions are correct. Make sure to double-check and verify the instructions provided in the original source.
-
 
 ## Future:
 
