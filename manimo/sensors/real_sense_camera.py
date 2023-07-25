@@ -6,7 +6,7 @@ import numpy as np
 import pyrealsense2 as rs
 from omegaconf import DictConfig
 
-from manimo.sensors import Sensor
+from manimo.sensors.sensor import Sensor
 from manimo.utils.helpers import Rate
 
 
