@@ -1,3 +1,3 @@
 defaults:
   - arm: franka_arm
-  - gripper: polymetis_gripper
+  # - gripper: polymetis_gripper

@@ -53,6 +53,9 @@ class FrankaArm(Arm):
             else self.robot.get_joint_positions()
         )
         self._ik_solver = RobotIKSolver()
+        self.JOINT_OFFSET = np.array(
+        [0, 0, 0, 0, 0., np.pi/2, np.pi/4],
+        dtype=np.float32)
         self.reset()
 
     def set_home(self, home):
@@ -109,7 +112,7 @@ class FrankaArm(Arm):
         return obs, {}
 
     def _go_home(self):
-        home = torch.Tensor(self.home)
+        home = torch.Tensor(self.home) + torch.Tensor(self.JOINT_OFFSET)
 
         # Create policy instance
         q_initial = self.robot.get_joint_positions()
@@ -185,8 +188,13 @@ class FrankaArm(Arm):
 
         return ee_pos_desired, ee_quat_desired
 
-    def _apply_joint_commands(self, q_desired):
-        q_des_tensor = np.array(q_desired)
+    def _apply_joint_commands(self, q_desired, q_cur):        
+        CMD_DELTA_HIGH = np.array([0.1] * 7)/2
+        CMD_DELTA_LOW = np.array([-0.1] * 7)/2
+        CMD_DELTA_HIGH[-1] *= 7
+        CMD_DELTA_LOW[-1] *= 7
+        q_des_tensor = torch.tensor(np.clip(q_desired, q_cur+CMD_DELTA_LOW, q_cur+CMD_DELTA_HIGH))
+        # q_des_tensor += torch.tensor(self.JOINT_OFFSET)
         q_des_tensor = torch.tensor(
             np.clip(q_des_tensor, self.JOINT_LIMIT_MIN, self.JOINT_LIMIT_MAX)
         )
@@ -236,10 +244,10 @@ class FrankaArm(Arm):
             elif self.ik_mode == IKMode.DMControl:
                 ee_pos_current, ee_quat_current = self.robot.get_ee_pose()
                 cur_joint_positions = self.robot.get_joint_positions().numpy()
-                unscaled_action = action / 10
-                ee_pos_desired, ee_quat_desired = self._get_desired_pos_quat(
-                    unscaled_action
-                )
+                unscaled_action = action
+                # ee_pos_desired, ee_quat_desired = self._get_desired_pos_quat(
+                #     unscaled_action
+                # )
 
                 robot_state = self.get_robot_state()[0]
                 joint_velocity = (
@@ -254,14 +262,16 @@ class FrankaArm(Arm):
                 desired_joint_action = (
                     joint_delta + self.robot.get_joint_positions().numpy()
                 )
+                # desired_joint_action -= self.JOINT_OFFSET
+                # cur_joint_positions -= self.JOINT_OFFSET
 
                 command_status = self._apply_joint_commands(
-                    desired_joint_action
+                    desired_joint_action, cur_joint_positions
                 )
 
             action_obs["joint_action"] = desired_joint_action
-            action_obs["ee_pos_action"] = ee_pos_desired.numpy()
-            action_obs["ee_quat_action"] = ee_quat_desired.numpy()
+            # action_obs["ee_pos_action"] = ee_pos_desired.numpy()
+            # action_obs["ee_quat_action"] = ee_quat_desired.numpy()
 
         elif self.action_space == ActionSpace.Joint:
             command_status = self._apply_joint_commands(action)

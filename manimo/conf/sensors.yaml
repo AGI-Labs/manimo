@@ -1,4 +1,4 @@
 defaults:
-  - camera: multi_zed
+  - camera: real_sense
 #   # - camera: real_sense
 #   - tactile: reskin
