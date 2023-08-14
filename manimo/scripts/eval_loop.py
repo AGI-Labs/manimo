@@ -45,6 +45,7 @@ class AIAgent:
         self.obs_keys = obs_config["obs"]
 
         print(f"loaded agent from {agent_path}")
+        self.agent_path = agent_path
 
     def get_raw_imgs_and_obs(self, env_obs, IMG_SIZE=256):
         imgs = [env_obs[cam_key][0] for cam_key in self.img_keys]
@@ -77,7 +78,7 @@ class AIAgent:
             start = time.time()
             with torch.no_grad():
                 acs = self.agent.eval().get_actions(img, obs)
-            print(f"get action time: {(time.time() - start)*1000} ms")
+            print(f"get action time: {(time.time() - start)*1000} ms from agent {self.agent_path}")
             acs = acs.cpu().numpy()[0]
 
             if len(acs.shape) == 1:
@@ -135,16 +136,20 @@ class Eval(BaseCallback):
             self.agent_idx = agent_idx
 
     def on_end_traj(self, traj_idx):
-        print(f"finish logging")
-        # self.logger.finish()
-        pass
-        # return super().on_end_traj(traj_idx)
+        if self.logger:
+            pass
+        return super().on_end_traj(traj_idx)
 
-    def get_action(self, obs):
-        action = self.ai_agents[self.agent_idx].get_action(obs)
-        new_obs = obs.copy()
-        new_obs['action'] = np.append(*action)
-        # self.logger.log(new_obs)
+    def get_action(self, obs, pred_action=None):
+        if pred_action is None:
+            action = self.ai_agents[self.agent_idx].get_action(obs)
+            new_obs = obs.copy()
+            new_obs['action'] = np.append(*action)
+            new_obs['actor'] = "ai_agent"
+            if self.logger:
+                self.logger.log(new_obs)
+        else:
+            action = pred_action
         return action
 
     def on_step(self, traj_idx, step_idx):

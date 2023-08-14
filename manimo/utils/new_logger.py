@@ -57,7 +57,9 @@ class DataLogger:
                 img, ts = cur_raw_obs[key]
                 obs[key] = img
 
-            obswrapper = ObsWrapper(obs)
+            obs['actor'] = cur_raw_obs['actor']
+
+            obswrapper = ObsWrapper(obs, skip_cam_idxs=[1, 3])
 
             action = np.empty(0)
             for key in self._action_keys:

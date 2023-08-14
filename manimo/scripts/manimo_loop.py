@@ -35,7 +35,7 @@ class ManimoLoop:
                 steps += 1
                 action = None
                 for callback in self.callbacks:
-                    new_action = callback.get_action(obs)
+                    new_action = callback.get_action(obs, pred_action=action)
                     if new_action is not None:
                         action = new_action
 
