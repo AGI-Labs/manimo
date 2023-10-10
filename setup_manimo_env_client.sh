@@ -45,3 +45,6 @@ cd ../
 git clone git@github.com:rail-berkeley/oculus_reader.git
 cd oculus_reader
 pip install .
+
+cd ../
+pip install -e .
