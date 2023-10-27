@@ -7,4 +7,4 @@ gripper0:
       port: 50052
     speed: 0.1
     force: 1.0
-    close_width_pct: 0.4
+    close_width_pct: 0

@@ -25,7 +25,8 @@ class Teleop(BaseCallback):
         pass
 
     def on_end_traj(self, traj_idx):
-        self.logger.finish(traj_idx)
+        if self.logger:
+            self.logger.finish(traj_idx)
         pass
 
     def get_action(self, obs, pred_action=None):
@@ -34,11 +35,15 @@ class Teleop(BaseCallback):
         """
         arm_action, gripper_action, buttons = self.teleop_agent.get_action(obs)
         if arm_action is not None:
-            teleop_action = [arm_action, not gripper_action]
+            # teleop_action = [arm_action, not gripper_action]
+            # teleop_action = [arm_action, gripper_action]
+            teleop_action = [np.append(arm_action, gripper_action)]
             new_obs = obs.copy()
-            new_obs['action'] = np.append(*teleop_action)
+            # new_obs['action'] = np.append(*teleop_action)
+            new_obs['action'] = [teleop_action]
             new_obs['actor'] = "human"
-            self.logger.log(new_obs)
+            if self.logger:
+                self.logger.log(new_obs)
             self.buttons = buttons
             print(f"stepping teleop agent")
         else:
@@ -58,10 +63,10 @@ def main():
     teleop_agent = TeleopAgent()
     replay_buffer = ReplayBuffer()
     logger = DataLogger(replay_buffer=replay_buffer, action_keys=["action"])
-    teleop_callback = Teleop(logger, teleop_agent)
+    teleop_callback = Teleop(None, teleop_agent)
     hydra.core.global_hydra.GlobalHydra.instance().clear()
 
-    manimo_loop = ManimoLoop(callbacks=[teleop_callback], T=1000)
+    manimo_loop = ManimoLoop(callbacks=[teleop_callback], T=300)
 
     manimo_loop.run()
 

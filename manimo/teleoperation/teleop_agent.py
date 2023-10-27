@@ -6,7 +6,7 @@ from scipy.spatial.transform import Rotation as R
 
 from manimo.utils.types import ObsDict
 
-action_scaler = 10
+action_scaler = 1
 
 
 def quat_to_euler(quat, degrees=False):
@@ -48,7 +48,6 @@ class Agent:
         """
         raise NotImplementedError
 
-
 class TeleopAgent(Agent):
     """
     A teleoperation agent
@@ -71,11 +70,11 @@ class TeleopAgent(Agent):
         self.disable_rot = self.teleop_cfg.disable_rot
         self.position_mask = self.teleop_cfg.position_mask
 
-        self.pos_action_gain = 3
-        self.rot_action_gain = 6
+        self.pos_action_gain = 10
+        self.rot_action_gain = 10
         self.gripper_action_gain = 1
-        self.max_lin_vel = 1
-        self.max_rot_vel = 1
+        self.max_lin_vel = 10
+        self.max_rot_vel = 10
 
     def _limit_velocity(self, lin_vel, rot_vel):
         """Scales down the linear and angular magnitudes of the action"""
@@ -104,7 +103,7 @@ class TeleopAgent(Agent):
         control_en, grasp_en, vr_pose_curr, buttons = self.teleop.get_state()
         vr_pos, vr_quat = vr_pose_curr
         robot_pos = obs["eef_pos"]
-        robot_quat = obs["eef_rot"]
+        robot_quat = euler_to_quat(obs["eef_rot"], degrees=True)
 
         # option to use gripper
         if self.use_gripper:
@@ -138,19 +137,22 @@ class TeleopAgent(Agent):
                 )
                 target_quat_offset = quat_diff(vr_quat, self.vr_origin["quat"])
                 quat_action = quat_diff(target_quat_offset, robot_quat_offset)
-                euler_action = quat_to_euler(quat_action)
+                euler_action = quat_to_euler(quat_action, degrees=True)
 
                 # Scale Appropriately
                 pos_action *= self.pos_action_gain
                 euler_action *= self.rot_action_gain
 
+                print(f"dx: {pos_action[0]} before limit")
                 pos_vel, euler_vel = self._limit_velocity(
                     pos_action, euler_action
                 )
+                print(f"dx: {pos_vel[0]} after limit")
                 arm_action, gripper_action = (
                     np.append(pos_vel, euler_vel),
                     grasp_en,
                 )
+                print(f"arm_action: {arm_action}")
 
                 return arm_action * action_scaler, gripper_action, buttons
 

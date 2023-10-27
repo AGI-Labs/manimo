@@ -21,9 +21,12 @@ def main(args):
     traj_count = 0
     buffer = ReplayBuffer()
     for fname in sorted(fnames):
-        with open(f"{fdir}/{fname}", "rb") as f:
-            trajs = pickle.load(f)
-            buffer.append_traj_list(trajs)
+        try:
+            with open(f"{fdir}/{fname}", "rb") as f:
+                trajs = pickle.load(f)
+                buffer.append_traj_list(trajs)
+        except:
+            print(f"skipping file: {fname}")
 
     traj_count = len(buffer.traj_starts())
     traj_list = buffer.to_traj_list()

@@ -1,3 +1,2 @@
 defaults:
-  - arm: franka_arm
-  - gripper: polymetis_gripper
+  - arm: kinova_arm

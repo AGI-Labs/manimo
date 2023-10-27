@@ -49,6 +49,8 @@ class OculusQuestReader(TeleopDeviceReader):
         self.controller_id = controller_id
         # LPF filter
         self.vr_pose_filtered = None
+        # self.global_to_env_mat = vec_to_reorder_mat([-3, -1, 2, 4])
+        # self.global_to_env_mat = vec_to_reorder_mat([2, -1, -3, 4])
         self.global_to_env_mat = vec_to_reorder_mat([-3, -1, 2, 4])
         self.vr_to_global_mat = np.eye(4)
         self.reset_orientation = True

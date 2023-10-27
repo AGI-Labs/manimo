@@ -5,7 +5,7 @@ cam0:
     img_height: 720
     hz: 30
     name: "cam0"
-    device_id: "15034562"
+    device_id: "26638268"
     hcrop: 0
     vcrop: 0
     display: True
@@ -22,7 +22,7 @@ cam1:
     img_height: 720
     hz: 30
     name: "cam1"
-    device_id: "25861225"
+    device_id: "16291792"
     hcrop: 0
     vcrop: 0
     display: True
