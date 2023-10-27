@@ -19,21 +19,29 @@ def main(args):
         if fname.endswith(".pkl"):
             fnames.append(fname)
     traj_count = 0
+    if args.human_only:
+        skip_actors = ["ai_agent"]
+    else:
+        skip_actors = []
     buffer = ReplayBuffer()
+    num_transitions = 0
+    last_buffer_trans = 0
     for fname in sorted(fnames):
         with open(f"{fdir}/{fname}", "rb") as f:
             trajs = pickle.load(f)
-            buffer.append_traj_list(trajs)
+            buffer.append_traj_list(trajs, skip_actors=skip_actors)
+            last_buffer_trans = len(buffer)
 
     traj_count = len(buffer.traj_starts())
     traj_list = buffer.to_traj_list()
     out_name = args.output
     dump_to_file(traj_list, out_name)
-    print(f"Number of trajectories: {traj_count}")
+    print(f"Combined {traj_count} trajectories to obtain {last_buffer_trans} transitions.")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--human_only", type=bool, default=False, help="Only store human transitions")
     parser.add_argument("-d", "--directory", type=str, default="/home/nitro/Documents/manimo/manimo/scripts/demos",
                         help="Directory path containing the .pkl files")
     parser.add_argument("-o", "--output", type=str, default="/home/nitro/Documents/manimo/manimo/scripts/traj_list.pkl",

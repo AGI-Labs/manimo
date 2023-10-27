@@ -21,11 +21,13 @@ class Teleop(BaseCallback):
         self.buttons = None
 
     def on_begin_traj(self, traj_idx):
+        print(f"beginning new trajectory")
         pass
 
     def on_end_traj(self, traj_idx):
-        self.logger.finish(traj_idx)
-        pass
+        if self.logger:
+            self.logger.finish(traj_idx)
+            pass
 
     def get_action(self, obs, pred_action=None):
         """
@@ -33,11 +35,15 @@ class Teleop(BaseCallback):
         """
         arm_action, gripper_action, buttons = self.teleop_agent.get_action(obs)
         if arm_action is not None:
+            # teleop_action = [arm_action]
             teleop_action = [arm_action, not gripper_action]
+            # import pdb; pdb.set_trace()
             new_obs = obs.copy()
+            # new_obs['action'] = np.array(*teleop_action)
             new_obs['action'] = np.append(*teleop_action)
             new_obs['actor'] = "human"
-            self.logger.log(new_obs)
+            if self.logger:
+                self.logger.log(new_obs)
             self.buttons = buttons
             print(f"stepping teleop agent")
         else:
@@ -60,8 +66,9 @@ def main():
     teleop_callback = Teleop(logger, teleop_agent)
     hydra.core.global_hydra.GlobalHydra.instance().clear()
 
-    manimo_loop = ManimoLoop(callbacks=[teleop_callback], T=750)
+    manimo_loop = ManimoLoop(callbacks=[teleop_callback], T=1500)
 
+    print(f'staring loop')
     manimo_loop.run()
 
 

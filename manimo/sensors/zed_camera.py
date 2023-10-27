@@ -128,14 +128,15 @@ class ZedCam(Sensor):
     def get_obs(self):
         name = self.cam_cfg.name
         obs = {}
+        # import pdb; pdb.set_trace()
         try:
             if self.window is None:
                 left_im, right_im, ts = self.rgb_frame_queue.get()
                 obs[f"{name}_left"] = (left_im, ts)
                 obs[f"{name}_right"] = (right_im, ts)
 
-                if self.cam_cfg.display:
-                    pass
+                # if self.cam_cfg.display:
+                #     pass
                     # cv2.imshow(f"{name}_left",
                     # left_im[:,:,::-1]); cv2.waitKey(1)
             else:
@@ -144,7 +145,7 @@ class ZedCam(Sensor):
 
                 obs[name] = list(self.window)
 
-        except:
+        except Exception as e:
             print(f"{name} queue is empty")
 
         return obs

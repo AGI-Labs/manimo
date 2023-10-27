@@ -11,10 +11,11 @@ from robobuf.buffers import ReplayBuffer
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--log_dir", type=str, default="./demos")
     parser.add_argument("--agent_paths", nargs="+", default=[])
     args = parser.parse_args()
     replay_buffer = ReplayBuffer()
-    logger = DataLogger(replay_buffer=replay_buffer, action_keys=["action"])
+    logger = DataLogger(replay_buffer=replay_buffer, action_keys=["action"], storage_path=args.log_dir)
     eval_callback = Eval(logger, args.agent_paths)
 
     teleop_agent = TeleopAgent()

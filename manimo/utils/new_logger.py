@@ -21,11 +21,13 @@ class DataLogger:
         replay_buffer: ReplayBuffer,
         obs_keys=["eef_pos", "eef_rot", "eef_gripper_width"],
         action_keys=["action", "eef_gripper_action"],
+        storage_path="./demos",
     ):
         self._obs_keys = obs_keys
         self._action_keys = action_keys
         self.replay_buffer = replay_buffer
         self.all_obs = []
+        self.storage_path = storage_path
 
     def log(self, obs: dict):
         """Log the current observation.
@@ -72,9 +74,14 @@ class DataLogger:
             self.replay_buffer.add(transition, is_first=(i==0))
 
         # get the latest traj_idx from folder ./demos
-        if os.path.exists("./demos"):
-            latest_traj_idx = len(os.listdir("./demos"))
+        if os.path.exists(self.storage_path):
+            latest_traj_idx = len(os.listdir(self.storage_path))
+        else:
+            # create folder self.storage_path
+            os.makedirs(self.storage_path)
+            latest_traj_idx = 0
 
-        self.dump_to_file(f"./demos/traj_{latest_traj_idx:05d}.pkl")
+
+        self.dump_to_file(f"{self.storage_path}/traj_{latest_traj_idx:05d}.pkl")
         self.replay_buffer.clear()
         self.all_obs.clear()
