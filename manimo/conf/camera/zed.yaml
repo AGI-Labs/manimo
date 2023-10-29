@@ -1,5 +1,5 @@
 cam0:
-  _target_: manimo.sensors.ZedCam
+  _target_: manimo.sensors.zed_camera.ZedCam
   cam_cfg:
     img_width: 1280
     img_height: 720
@@ -8,6 +8,9 @@ cam0:
     device_id: "25861225"
     buffer_size: 1
     window_dur: null
+    vcrop: 0
+    hcrop: 0
+    display: False
     warm_start:
       enabled: True
       frames: 60

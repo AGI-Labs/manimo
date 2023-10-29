@@ -8,7 +8,10 @@ from manimo.actuators.arms.arm import Arm
 from manimo.actuators.arms.robot_ik.robot_ik_solver import RobotIKSolver
 
 # from manimo.actuators.arms.moma_arm import MujocoArmModel
-from manimo.actuators.controllers.policies import CartesianPDPolicy, JointPDPolicy
+from manimo.actuators.controllers.policies import (
+    CartesianPDPolicy,
+    JointPDPolicy,
+)
 from manimo.teleoperation.teleop_agent import quat_add
 from manimo.utils.helpers import Rate
 from manimo.utils.types import ActionSpace, IKMode

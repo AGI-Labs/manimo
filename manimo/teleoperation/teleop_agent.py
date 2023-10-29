@@ -8,24 +8,7 @@ from manimo.utils.types import ObsDict
 
 action_scaler = 1
 
-
-def quat_to_euler(quat, degrees=False):
-    euler = R.from_quat(quat).as_euler("xyz", degrees=degrees)
-    return euler
-
-
-def euler_to_quat(euler, degrees=False):
-    return R.from_euler("xyz", euler, degrees=degrees).as_quat()
-
-
-def quat_diff(target, source):
-    result = R.from_quat(target) * R.from_quat(source).inv()
-    return result.as_quat()
-
-
-def quat_add(target, source):
-    result = R.from_quat(target) * R.from_quat(source)
-    return result.as_quat()
+from manimo.utils.helpers import quat_diff, quat_to_euler, euler_to_quat
 
 
 class Agent:
@@ -47,6 +30,7 @@ class Agent:
             np.ndarray: The action
         """
         raise NotImplementedError
+
 
 class TeleopAgent(Agent):
     """
@@ -71,7 +55,7 @@ class TeleopAgent(Agent):
         self.position_mask = self.teleop_cfg.position_mask
 
         self.pos_action_gain = 10
-        self.rot_action_gain = 10
+        self.rot_action_gain = 1
         self.gripper_action_gain = 1
         self.max_lin_vel = 10
         self.max_rot_vel = 10
@@ -103,7 +87,9 @@ class TeleopAgent(Agent):
         control_en, grasp_en, vr_pose_curr, buttons = self.teleop.get_state()
         vr_pos, vr_quat = vr_pose_curr
         robot_pos = obs["eef_pos"]
-        robot_quat = euler_to_quat(obs["eef_rot"], degrees=True)
+        robot_quat = obs[
+            "eef_rot"
+        ]  # euler_to_quat(obs["eef_rot"], degrees=True)
 
         # option to use gripper
         if self.use_gripper:
@@ -143,11 +129,9 @@ class TeleopAgent(Agent):
                 pos_action *= self.pos_action_gain
                 euler_action *= self.rot_action_gain
 
-                print(f"dx: {pos_action[0]} before limit")
                 pos_vel, euler_vel = self._limit_velocity(
                     pos_action, euler_action
                 )
-                print(f"dx: {pos_vel[0]} after limit")
                 arm_action, gripper_action = (
                     np.append(pos_vel, euler_vel),
                     grasp_en,

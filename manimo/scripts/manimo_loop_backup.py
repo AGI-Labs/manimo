@@ -37,13 +37,14 @@ def toggle_logger(logging, logger, num_obs, start_time):
     logging = not logging
     return logging, num_obs, start_time, finish
 
+
 def toggle(flag):
     return not flag
 
 
 class AIAgent:
-    def __init__(self, agent_path, model_name='r3m_stacking_newdata2.ckpt'):
-        with open(Path(agent_path, 'agent_config.yaml'), 'r') as f:
+    def __init__(self, agent_path, model_name="r3m_stacking_newdata2.ckpt"):
+        with open(Path(agent_path, "agent_config.yaml"), "r") as f:
             config_yaml = f.read()
             agent_config = yaml.safe_load(config_yaml)
         with open(Path(agent_path, "obs_config.yaml"), "r") as f:
@@ -51,7 +52,11 @@ class AIAgent:
             obs_config = yaml.safe_load(config_yaml)
 
         agent = hydra.utils.instantiate(agent_config)
-        agent.load_state_dict(torch.load(Path(agent_path, model_name), map_location='cpu')['model'])
+        agent.load_state_dict(
+            torch.load(Path(agent_path, model_name), map_location="cpu")[
+                "model"
+            ]
+        )
         self.agent = agent.eval().cuda()
         self.actions = []
 
@@ -114,11 +119,17 @@ def main():
         "--name", type=str, default="demo", help="name of the demo"
     )
     parser.add_argument("--data_path", type=str, default="./demos/")
-    parser.add_argument("--agent_paths",  nargs='+', default=[])
-    parser.add_argument("--enable_teleop", action='store_true', help="enable teleop")
-    parser.add_argument("--enable_dagger", action='store_true', help="enable dagger")
-    parser.add_argument("--save_demos", action='store_true', help="save demos")
-    parser.add_argument("--T", type=int, default=280, help="Number of timesteps to collect")
+    parser.add_argument("--agent_paths", nargs="+", default=[])
+    parser.add_argument(
+        "--enable_teleop", action="store_true", help="enable teleop"
+    )
+    parser.add_argument(
+        "--enable_dagger", action="store_true", help="enable dagger"
+    )
+    parser.add_argument("--save_demos", action="store_true", help="save demos")
+    parser.add_argument(
+        "--T", type=int, default=280, help="Number of timesteps to collect"
+    )
 
     args = parser.parse_args()
     name = args.name
@@ -126,7 +137,10 @@ def main():
     print(f"using time horizon: {args.T}")
 
     # create a list of ai agents based on the agent paths, use list comprehension
-    ai_agents = [AIAgent(Path(agent_path).parent, Path(agent_path).name) for agent_path in args.agent_paths]
+    ai_agents = [
+        AIAgent(Path(agent_path).parent, Path(agent_path).name)
+        for agent_path in args.agent_paths
+    ]
 
     hydra.initialize(config_path="../conf", job_name="collect_demos")
 
@@ -177,8 +191,14 @@ def main():
         env_steps = 0
 
         if args.agent_paths:
-            print(f"current agent_idx: {agent_idx} at path: {args.agent_paths[agent_idx]}")
-            print(f"press enter to use the same agent, press any other number to chose agent index from 0 to {len(ai_agents) - 1}")
+            print(
+                f"current agent_idx: {agent_idx} at path:"
+                f" {args.agent_paths[agent_idx]}"
+            )
+            print(
+                "press enter to use the same agent, press any other number to"
+                f" chose agent index from 0 to {len(ai_agents) - 1}"
+            )
             print(f"to use agents at paths: {args.agent_paths}")
         user_input = input()
         if user_input != "":
@@ -191,7 +211,7 @@ def main():
         # wait for 3 seconds
         # time.sleep(2)
         while True:
-        # while env_steps < args.T:
+            # while env_steps < args.T:
             # if user presses ctrl c then break
 
             if args.enable_teleop:
@@ -207,16 +227,18 @@ def main():
             if args.save_demos:
                 result = button_state_manager.handle_state(
                     buttons,
-                    'A',
-                    toggle_logger, logging, logger, num_obs, start_time
+                    "A",
+                    toggle_logger,
+                    logging,
+                    logger,
+                    num_obs,
+                    start_time,
                 )
                 if result:
                     logging, num_obs, start_time, finish = result
             else:
                 result = button_state_manager.handle_state(
-                    buttons,
-                    'A',
-                    toggle, finish
+                    buttons, "A", toggle, finish
                 )
                 if result is not None:
                     finish = result
@@ -224,17 +246,13 @@ def main():
             # Handle the 'B' button state and toggle the use_ai_agent state
             if args.enable_dagger:
                 result = button_state_manager.handle_state(
-                    buttons,
-                    'B',
-                    toggle, use_ai_agent
+                    buttons, "B", toggle, use_ai_agent
                 )
                 if result is not None:
                     use_ai_agent = result
             else:
                 result = button_state_manager.handle_state(
-                    buttons,
-                    'B',
-                    toggle, finish
+                    buttons, "B", toggle, finish
                 )
                 if result is not None:
                     finish = result

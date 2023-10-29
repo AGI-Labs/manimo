@@ -1,5 +1,6 @@
 import time
 from enum import Enum
+from scipy.spatial.transform import Rotation as R
 
 HOMES = {
     "pour": [
@@ -82,3 +83,22 @@ class StateManager:
                 return callback(*args)
 
         return None
+
+
+def quat_to_euler(quat, degrees=False):
+    euler = R.from_quat(quat).as_euler("xyz", degrees=degrees)
+    return euler
+
+
+def euler_to_quat(euler, degrees=False):
+    return R.from_euler("xyz", euler, degrees=degrees).as_quat()
+
+
+def quat_diff(target, source):
+    result = R.from_quat(target) * R.from_quat(source).inv()
+    return result.as_quat()
+
+
+def quat_add(target, source):
+    result = R.from_quat(target) * R.from_quat(source)
+    return result.as_quat()

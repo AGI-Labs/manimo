@@ -24,14 +24,20 @@ class AIAgent:
         print(config_yaml)
 
         agent = hydra.utils.instantiate(agent_config)
-        agent.load_state_dict(torch.load(Path(base_path, 'recheck_stacking.ckpt'), map_location='cpu')['model'])
+        agent.load_state_dict(
+            torch.load(
+                Path(base_path, "recheck_stacking.ckpt"), map_location="cpu"
+            )["model"]
+        )
         self.agent = agent.eval().cuda()
-        self.transform = get_transform_by_name('preproc')
+        self.transform = get_transform_by_name("preproc")
         print(f"Agent loaded from {base_path}")
 
     def get_action(self, raw_imgs, raw_obs):
         obs = torch.from_numpy(raw_obs).float()[None].cuda()
-        img = self.transform(torch.from_numpy(raw_imgs).float().permute((0, 3, 1, 2)) / 255)[None].cuda()
+        img = self.transform(
+            torch.from_numpy(raw_imgs).float().permute((0, 3, 1, 2)) / 255
+        )[None].cuda()
         start = time.time()
         with torch.no_grad():
             acs = self.agent.eval().get_actions(img, obs)
@@ -67,7 +73,7 @@ def get_raw_imgs_and_obs(env_obs, IMG_SIZE=256):
 
 
 def main():
-    base_path = '/home/sudeep/Downloads/recheck_stacking/franka_r3m_2023-05-11_02-16-45'
+    base_path = "/home/sudeep/Downloads/recheck_stacking/franka_r3m_2023-05-11_02-16-45"
     # base_path = '/home/sudeep/Downloads/recheck_stacking/franka_vit_base_2023-05-11_02-17-31'
 
     agent = AIAgent(base_path)

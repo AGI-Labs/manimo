@@ -110,8 +110,6 @@ class ZedCam(Sensor):
     def close(self):
         if self.observer_thread is not None:
             self.closed = True
-            # self.rgb_frame_queue.close()
-            # self.rgb_frame_queue.join_thread()
             self.rgb_frame_queue = None
             self.observer_thread.join()
             self.observer_thread = None
@@ -143,7 +141,6 @@ class ZedCam(Sensor):
                     self.window.append(self.rgb_frame_queue.get())
 
                 obs[name] = list(self.window)
-
         except:
             print(f"{name} queue is empty")
 

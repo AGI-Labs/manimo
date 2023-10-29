@@ -10,7 +10,7 @@ class ManimoLoop:
 
         if not configs:
             configs = ["sensors", "actuators", "env"]
-        
+
         self.T = T
 
         hydra.initialize(config_path="../conf", job_name="manimo_loop")
@@ -20,7 +20,6 @@ class ManimoLoop:
         ]
 
         self.env = SingleArmEnv(*env_configs)
-
 
     def run(self):
         traj_idx = 0
@@ -58,10 +57,13 @@ class ManimoLoop:
 
             for callback in self.callbacks:
                 callback.on_end_traj(traj_idx)
-            
+
+            # time.sleep(5)
+
             # 2. how to exit the entire manimo loop?
 
             traj_idx += 1
+
 
 def main():
     manimo_loop = ManimoLoop()

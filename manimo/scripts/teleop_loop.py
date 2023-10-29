@@ -5,8 +5,7 @@ from manimo.scripts.manimo_loop import ManimoLoop
 from manimo.utils.callbacks import BaseCallback
 from manimo.teleoperation.teleop_agent import TeleopAgent
 from manimo.utils.new_logger import DataLogger
-from robobuf.buffers import ReplayBuffer 
-
+from robobuf.buffers import ReplayBuffer
 
 
 class Teleop(BaseCallback):
@@ -36,8 +35,8 @@ class Teleop(BaseCallback):
         if arm_action is not None:
             teleop_action = [arm_action, not gripper_action]
             new_obs = obs.copy()
-            new_obs['action'] = np.append(*teleop_action)
-            new_obs['actor'] = "human"
+            new_obs["action"] = np.append(*teleop_action)
+            new_obs["actor"] = "human"
             self.logger.log(new_obs)
             self.buttons = buttons
             print(f"stepping teleop agent")

@@ -32,14 +32,25 @@ def main(args):
     traj_list = buffer.to_traj_list()
     out_name = args.output
     dump_to_file(traj_list, out_name)
+    print(f"Number of transitions: {len(buffer)}")
     print(f"Number of trajectories: {traj_count}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--directory", type=str, default="/home/nitro/Documents/manimo/manimo/scripts/demos",
-                        help="Directory path containing the .pkl files")
-    parser.add_argument("-o", "--output", type=str, default="/home/nitro/Documents/manimo/manimo/scripts/traj_list.pkl",
-                        help="Output file name")
+    parser.add_argument(
+        "-d",
+        "--directory",
+        type=str,
+        default="/home/nitro/Documents/manimo/manimo/scripts/demos",
+        help="Directory path containing the .pkl files",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        default="/home/nitro/Documents/manimo/manimo/scripts/traj_list.pkl",
+        help="Output file name",
+    )
     args = parser.parse_args()
     main(args)

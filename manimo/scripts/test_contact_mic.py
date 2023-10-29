@@ -94,9 +94,8 @@ def main():
             f" {len(all_unique_timestamps) * AUDIO_PACKET_SIZE / AUDIO_FPS} s"
         )
         print(
-            "approx fps from timesteps:"
-            f" {(len(all_unique_timestamps) * AUDIO_PACKET_SIZE /
-                 total_time):.0f} HZ"
+            "approx fps from timesteps: "
+            f"{(len(all_unique_timestamps) * AUDIO_PACKET_SIZE / total_time):.0f} HZ"
         )
 
         # output audio stats

@@ -26,7 +26,6 @@ parser.add_argument("--cam", type=str, default="ego_cam")
 parser.add_argument("--size", type=int, default=256)
 
 
-
 args = parser.parse_args()
 replay_file = args.replay_file
 
@@ -122,7 +121,7 @@ for traj_id, replay_file in enumerate(tqdm(all_replay_files)):
                         interpolation=cv2.INTER_AREA,
                     )
                     traj_data[img_key][i][video_idx] = image
-            traj_data['images'] = traj_data['images'][:, [cam_idx]]
+            traj_data["images"] = traj_data["images"][:, [cam_idx]]
             all_traj_data.append(traj_data)
             gc.collect()
 
@@ -135,11 +134,13 @@ for traj_id, replay_file in enumerate(tqdm(all_replay_files)):
 #     new_f.create_dataset('pick_nsh_220_demos', data=all_traj_data)
 
 if cam_type == Camera.ego_cam:
-    cam_name = 'ego_cam'
+    cam_name = "ego_cam"
 elif cam_type == Camera.global_cam:
-    cam_name = 'global_cam'
+    cam_name = "global_cam"
 try:
-    with open(str(replay_folder) + f'/stacking_nsh_demos_june13_{cam_name}.pkl', 'wb') as new_f:
+    with open(
+        str(replay_folder) + f"/stacking_nsh_demos_june13_{cam_name}.pkl", "wb"
+    ) as new_f:
         cloudpickle.dump(all_traj_data, new_f)
 
 except Exception as e:

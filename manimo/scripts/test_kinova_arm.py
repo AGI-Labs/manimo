@@ -3,6 +3,7 @@ import faulthandler
 import hydra
 from manimo.environments.single_arm_env import SingleArmEnv
 import time
+
 # create a single arm environment
 
 hydra.initialize(config_path="../conf", job_name="collect_demos_test")

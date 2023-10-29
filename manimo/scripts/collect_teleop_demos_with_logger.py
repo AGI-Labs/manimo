@@ -70,9 +70,7 @@ def main():
         apply_rot_mask = False
         print(f"ready to collect demos with name: {fname}!")
         while True:
-            arm_action, gripper_action, buttons = agent.get_action(
-                obs
-            )
+            arm_action, gripper_action, buttons = agent.get_action(obs)
 
             if buttons:
                 log_toggle = buttons["A"]

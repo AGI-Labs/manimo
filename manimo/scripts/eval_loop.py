@@ -13,7 +13,8 @@ from pytimedinput import timedKey
 from scipy.spatial.transform import Rotation as R
 from manimo.utils.new_logger import DataLogger
 from robobuf.buffers import ReplayBuffer
-torch.set_float32_matmul_precision('high')
+
+torch.set_float32_matmul_precision("high")
 
 
 def quat_to_euler(quat, degrees=False):
@@ -78,7 +79,10 @@ class AIAgent:
             start = time.time()
             with torch.no_grad():
                 acs = self.agent.eval().get_actions(img, obs)
-            print(f"get action time: {(time.time() - start)*1000} ms from agent {self.agent_path}")
+            print(
+                f"get action time: {(time.time() - start)*1000} ms from agent"
+                f" {self.agent_path}"
+            )
             acs = acs.cpu().numpy()[0]
 
             if len(acs.shape) == 1:
@@ -144,8 +148,8 @@ class Eval(BaseCallback):
         if pred_action is None:
             action = self.ai_agents[self.agent_idx].get_action(obs)
             new_obs = obs.copy()
-            new_obs['action'] = np.append(*action)
-            new_obs['actor'] = "ai_agent"
+            new_obs["action"] = np.append(*action)
+            new_obs["actor"] = "ai_agent"
             if self.logger:
                 self.logger.log(new_obs)
         else:

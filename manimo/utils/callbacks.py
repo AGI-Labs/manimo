@@ -4,14 +4,15 @@ from abc import ABC, abstractmethod
 Contains basic callbacks for manimo.
 """
 
+
 class BaseCallback(ABC):
     """
     Base class for all callbacks.
     """
+
     def __init__(self, logger):
         super().__init__()
         self.logger = logger
-
 
     @abstractmethod
     def on_begin_traj(self, traj_idx):

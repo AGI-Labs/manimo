@@ -8,9 +8,11 @@ hydra.initialize(config_path="../teleoperation/conf", job_name="test_oculus")
 teleop_cfg = hydra.compose(config_name="teleop_config")
 teleop = hydra.utils.instantiate(teleop_cfg.device)["device"]
 
+
 def quat_to_euler(quat, degrees=False):
     euler = R.from_quat(quat).as_euler("xyz", degrees=degrees)
     return euler
+
 
 while True:
     control_en, grasp_en, vr_pose_cur, buttons = teleop.get_state()

@@ -6,7 +6,7 @@ from manimo.scripts.manimo_loop import ManimoLoop
 from manimo.scripts.teleop_loop import Teleop
 from manimo.teleoperation.teleop_agent import TeleopAgent
 from manimo.utils.new_logger import DataLogger
-from robobuf.buffers import ReplayBuffer 
+from robobuf.buffers import ReplayBuffer
 
 
 def main():

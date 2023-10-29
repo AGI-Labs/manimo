@@ -4,14 +4,11 @@ import pickle
 import numpy as np
 from robobuf.buffers import ObsWrapper, Transition, ReplayBuffer
 from scipy.spatial.transform import Rotation as R
-
-
-def quat_to_euler(quat, degrees=False):
-    euler = R.from_quat(quat).as_euler("xyz", degrees=degrees)
-    return euler
+from manimo.utils.helpers import quat_to_euler, euler_to_quat
 
 
 os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
+
 
 class DataLogger:
     """This class is used to log observations from the robot environment."""
@@ -43,33 +40,35 @@ class DataLogger:
     def finish(self, traj_idx=0):
         for i in range(len(self.all_obs)):
             cur_raw_obs = self.all_obs[i]
-            
-            obs = {'state': np.empty(0)}
-            
+
+            obs = {"state": np.empty(0)}
+
             for key in self._obs_keys:
                 if key == "eef_rot":
-                    obs['state'] = np.append(obs['state'], quat_to_euler(cur_raw_obs[key]))
+                    obs["state"] = np.append(
+                        obs["state"], quat_to_euler(cur_raw_obs[key])
+                    )
                 else:
-                    obs['state'] =  np.append(obs['state'], cur_raw_obs[key])
-            
+                    obs["state"] = np.append(obs["state"], cur_raw_obs[key])
+
             cam_keys = [key for key in cur_raw_obs.keys() if "cam" in key]
             for key in cam_keys:
                 img, ts = cur_raw_obs[key]
                 obs[key] = img
 
-            obs['actor'] = cur_raw_obs['actor']
+            obs["actor"] = cur_raw_obs["actor"]
 
-            obswrapper = ObsWrapper(obs, skip_cam_idxs=[1, 3])
+            obswrapper = ObsWrapper(obs, skip_cam_idxs=[0])
 
             action = np.empty(0)
             for key in self._action_keys:
                 if key in cur_raw_obs.keys():
                     action = np.append(action, cur_raw_obs[key])
-            
-            reward = 0 if i < len(self.all_obs)-1 else 1
+
+            reward = 0 if i < len(self.all_obs) - 1 else 1
 
             transition = Transition(obswrapper, action, reward)
-            self.replay_buffer.add(transition, is_first=(i==0))
+            self.replay_buffer.add(transition, is_first=(i == 0))
 
         # get the latest traj_idx from folder ./demos
         if os.path.exists("./demos"):
