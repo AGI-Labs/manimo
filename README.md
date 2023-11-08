@@ -65,3 +65,8 @@ FAQs:
   
 ## Acknowledgements:
 manimo's design is heavily inspired by [franka_demo](https://github.com/AGI-Labs/franka_demo/tree/dmanus_devel)
+
+## Projects using ManiMo:
+- [An Unbiased Look at Datasets for Visuo-Motor Pre-Training](https://data4robotics.github.io/): Sudeep Dasari, Mohan Kumar Srirama, Unnat Jain, Abhinav Gupta
+- [PlayFusion: Skill Acquisition via Diffusion from Language-Annotated Play](https://play-fusion.github.io/): Lili Chen, Shikhar Bahl, Deepak Pathak
+- [Hearing Touch: Audio-Visual Pretraining for Contact-Rich Manipulation](https://sites.google.com/view/hearing-touch): Jared Mejia, Victoria Dean, Tess Hellebrekers, Abhinav Gupta
