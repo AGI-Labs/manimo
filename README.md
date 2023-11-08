@@ -7,9 +7,6 @@ A modular interface for robotic manipulation:
   a. teleoperation (VR, space mouse)
   b. manual control
 
-
-Sure! Here are the instructions formatted as a single markdown block:
-
 ## Prerequisites
 
 - Install `mamba`
@@ -50,10 +47,6 @@ python get_current_position.py
   ```
 
 - (Optional) Set up Wi-Fi access to the device using the instructions provided at [https://developer.oculus.com/documentation/native/android/ts-adb/](https://developer.oculus.com/documentation/native/android/ts-adb/).
-
-FAQs:
-
-- Update the IP address in the `oculus.yaml` file.
 
 ### Zed Camera SDK Install
 
