@@ -1,4 +1,4 @@
-# MANIMO
+# ManiMo
 
 A modular interface for robotic manipulation:
 1. supports a suite of sensors (camera sensors, force sensors, touch sensors, audio sensors) and actuators (robotic arms: panda, and end-effectors).
