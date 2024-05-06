@@ -29,6 +29,9 @@ class PolymetisGripper(Gripper):
             dtype=np.float32,
         )
 
+        # Flag to check if gripper is closed
+        self.is_closed = False
+
     def _open_gripper(self):
         max_width = self._gripper_interface.metadata.max_width
         self._gripper_interface.goto(
@@ -45,16 +48,23 @@ class PolymetisGripper(Gripper):
     def step(self, action):
         obs = {}
         if action is not None:
-            gripper_close_width = max(self.action_space.high[0]*self.config.close_width_pct,
-                                       self.action_space.low[0])
+            gripper_close_width = max(
+                self.action_space.high[0] * self.config.close_width_pct,
+                self.action_space.low[0],
+            )
             action = np.clip(
                 action, gripper_close_width, self.action_space.high[0]
             )
-            self._gripper_interface.goto(
-                width=action,
-                speed=self.config.speed,
-                force=self.config.force,
-            )
+
+            # Allows gripper to close and open for objects of any width
+            if action != 0.0:
+                self._open_gripper()
+                self.is_closed = False
+            else:
+                if not self.is_closed:
+                    self._close_gripper()
+                self.is_closed = True
+
         obs["eef_gripper_action"] = action
         return obs
 
