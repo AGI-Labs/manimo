@@ -1,6 +1,0 @@
-gym
-hydra-core==1.2.0
-dm-control==1.0.5
-dm-robotics-moma==0.4.0
-mujoco==2.2.1
-protobuf==3.18.1
